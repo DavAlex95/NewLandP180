@@ -1,0 +1,14 @@
+lsecurity.o: module/libsecurity/src/lsecurity.c \
+ module/libsecurity/inc/pinpad.h \
+ C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi_crypto.h \
+ C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi.h \
+ module/libsecurity/inc/lsecurity.h libapi/emvl3.h \
+ module/libtool/inc/ltool.h module/libtool/inc/lfilesystem.h \
+ C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi.h module/libui/inc/lui.h \
+ module/libsecurity/inc/pinpadtool.h libapi/emvconfig.h \
+ module/libsecurity/inc/softalg.h \
+ C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi_app.h \
+ C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi_sysinfo.h \
+ C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi_display.h \
+ C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi_smartcard.h \
+ inc/virtualpad.h

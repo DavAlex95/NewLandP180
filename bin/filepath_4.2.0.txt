@@ -1,0 +1,12 @@
+bin\main
+bin\DispLogo.png
+bin\PrintLogo.bmp
+bin\EMVERRCODE.INI
+bin\roboto.ttf
+bin\screensaver1.png
+bin\screensaver2.png
+bin\Newland_L3_configuration.xml
+bin\server.pem
+lib\gcc4.2.0\libemvl3.so
+lib\gcc4.2.0\libntoms.so
+lib\gcc4.2.0\libconfig.so

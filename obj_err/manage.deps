@@ -1,0 +1,26 @@
+manage.o: src/manage.c inc/apiinc.h libapi/libapiinc.h \
+ C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi_display.h \
+ C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi.h \
+ C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi_kb.h \
+ C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi_sysinfo.h \
+ C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi_power.h \
+ C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi_led.h \
+ C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi_printer.h \
+ C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi_datetime.h \
+ C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi_beeper.h \
+ C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi_serialport.h \
+ C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi_smartcard.h \
+ C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi_crypto.h \
+ module/libui/inc/lui.h C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi.h \
+ module/libcomm/inc/lcomm.h \
+ C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi_wifi.h \
+ module/libtool/inc/ltool.h module/libtool/inc/lfilesystem.h \
+ module/libsecurity/inc/lsecurity.h libapi/emvl3.h \
+ module/libprint/inc/lprint.h inc/virtualpad.h libapi/emvl3.h \
+ libapi/emvconfig.h libapi/emverrcode.h inc/appinc.h inc/main.h \
+ inc/elecsign.h inc/txn_process.h inc/batch.h inc/settle.h \
+ inc/managetxn.h inc/comm.h inc/inout.h inc/param.h inc/tool.h \
+ inc/manage.h inc/debug.h inc/tlv.h inc/print.h inc/packet.h \
+ inc/emv_callback.h inc/emv_tag.h inc/emv_txn.h inc/emv_xml.h \
+ inc/emv_l3process.h inc/tr.h inc/tagparam.h inc/cJSON.h \
+ module/libcomm/inc/sslsockets.h inc/exception.h

@@ -1,0 +1,339 @@
+bankdemo by napi
+====================================================
+Date: 2024/3/18 +0800
+remove "NTOMS_Fetch_Oid" in NTOMS_proInit
+====================================================
+Date: 2023/9/26 +0800
+Add TOMS 2.0 to BankDemo.
+changes include:
+1. Add libntoms.so, libconfig.so, libntoms.h from TOMS 2.0
+2. Delete TOMS 1.0
+====================================================
+Date: 2023/7/17 +0800
+update Newland_L3_configuration.xml and configure custom tag
+changes include:
+added how to configure custom tag
+LoadXMLConfig in emv_xml.c
+====================================================
+Date: 2022/10/18 +0800
+Modify some prompts in CompleteTransaction
+changes include:
+CompleteTransaction
+====================================================
+Date: 2022/10/17 +0800
+improve the performance of outputting pinpad emv log
+changes include:
+PubL3OrderSet_PINPAD in pinpad.c
+====================================================
+Date: 2022/06/13 +0800
+parse TLV of PinPad_PerformTransaction
+changes include:
+bug fixed:
+1.added PerformTransResTlvParse to parse PinPad_PerformTransaction to get PIN in emv_callback.c
+====================================================
+Date: 2022/05/25 +0800
+improve the processing of Pinpad_SELECT_CANDIDATE_LIST
+changes include:
+1.szInputData[32] -> InputData[1024] in emv_callback.c
+====================================================
+Date: 2022/05/19 +0800
+improve the processing of PINPAD L3 command
+changes include:
+1.added get kcv ,get dukpt, input dialog
+2.improve the processing of PINPAD L3 command
+3.related files: lsecurity.c/pinpad.c/emv_callback.c/emv_l3process.c
+====================================================
+Date: 2022/05/06 +0800
+update EMV parameters and LED configure
+changes include:
+1.Newland_L3_configuration.xml:add aid and capk of ELO, add tag DF34 for paywave
+2.open LED configure: 0x1F8129 in L3PerformTransaction
+====================================================
+Date: 2021/03/07 +0800
+1.add field 57(KSN) for Settlement
+2.Get KSN from Pinpad:PubGetDukptKSN
+====================================================
+Date: 2021/03/07 +0800
+Toms:TOMS_SysAppInstall
+1.power checking before install app(less than 5%)
+====================================================
+Date: 2022/03/07 +0800
+update Newland_L3_configuration.xml and tag DF13 for Refund
+changes include:
+1. AID CLSS MIR: add tag 1F811E
+2. according to the M/Chip Requirements a refund should lead to an AAC(test case:MCD01.Test.02.Scenario.02)
+Func_AFTER_FINAL_SELECT:
+TxnL3SetData(_EMVPARAM_DF13_TACDENIAL, "\xFF\xFF\xFF\xFF\xFF", 5);
+====================================================
+Date: 2021/03/07 +0800
+update Toms lib: Optimize internal functional logic
+====================================================
+Date: 2021/01/17 +0800
+remove mdb/scan link libraries
+====================================================
+Date: 2021/01/12 +0800
+added some link libraries
+changes include:
+libnapi_c_externalmemory.so
+libnapi_c_scan.so
+libnapi_c_timer.so
+====================================================
+Date: 2021/01/08 +0800
+update logo
+changes include:
+DispLogo.png/PrintLogo.bmp
+====================================================
+Date: 2021/12/31 +0800
+update AMEX AID configure
+changes include:
+Newland_L3_configuration.xml : AMEX
+====================================================
+Date: 2021/11/11 +0800
+remove macro "DEMO"
+changes include:
+remove -D DEMO from makefle
+remove "ifdef DEMO" from code
+====================================================
+Date: 2021/11/01 +0800
+transfer file format : unix to windows
+changes include:
+added project
+same as the version: Date: 2021/10/28 +0800
+====================================================
+Date: 2021/11/01 +0800
+transfer file format : unix to windows
+changes include:
+remove project
+====================================================
+Date: 2021/10/28 +0800
+improve the USB debug mode
+changes include:
+tooldebug.c
+====================================================
+Date: 2021/10/26 +0800
+added dukpt for pinpad.
+changes include:
+get/increase KSN from pinpad: pinpad.c
+calculate mac/pin by dukpt:lsecurity.c
+====================================================
+Date: 2021/10/21 +0800
+remove install clear key
+====================================================
+Date: 2021/10/18 +0800
+remove second GAC in DEMO mode
+changes include:
+int CompleteTransaction {
+...
+#ifdef DEMO
+    strcpy(pstSystem->szResponse, "00");
+	return APP_SUCC;
+#endif
+...
+}
+====================================================
+Date: 2021/09/30 +0800
+Updated the criteria for installing plaintext keys
+changes include:
+PubLoadMainKey: PubGetSecCfg --> PubFsExist("/usr/sbin/NKLoader")
+====================================================
+Date: 2021/09/23 +0800
+added loading clear key by NAPI_SecGenerateKey
+changes include:
+lsecurity.c/ltool.c
+====================================================
+Date: 2021/09/13 +0800
+added Electronic signature setting
+changes include:
+manage: 7.SYSTEM->8.ELEC SIGN-> "OPEN ELEC SIGN?"?
+mainMenu: REPORT->4.LOOK UP->"4.VIEW SIGN"
+====================================================
+Date: 2021/09/02 +0800
+added Electronic signature
+====================================================
+Date: 2021/09/02 +0800
+update Newland_L3_configuration.xml file
+changes include:
+AID CLSS MIR configure
+AID CLSS INTERAC configure
+====================================================
+Date: 2021/09/01 +0800
+modify pinpad instruction set.
+changes include:
+1.added card remove command
+2.fixed L3_CALLBACK_SELECT_CANDIDATE_LIST (0x4C 0x30 0x36 0x04) command
+2.modify L3 callback command
+====================================================
+Date: 2021/07/22 +0800
+added AMEX DRL
+changes include:
+1.Newland_L3_configuration.xml
+2.LoadXMLConfig
+====================================================
+Date: 2021/03/23 +0800
+remove unused module(module/libcard)
+changes include:
+1.remove libcard dir, reading card rely on libemvl3.so
+2.makefile:remove CARDINCDIR and CARDSRCDIR
+====================================================
+Date: 2021/03/03 +0800
+update Newland_L3_configuration.xml file
+changes include:
+AID CLSS AMEX:added DF19/DF20/DF21
+AID CLSS INTERAC
+added:
+CAPK VISA 51
+CAPK AMEX 97
+CAPK RUPAY 04
+CAPK dinner 5C
+====================================================
+Date: 2021/02/25 +0800
+added field 57(KSN) for related transaciton (dukpt)
+====================================================
+Date: 2021/02/25 +0800
+added virtual keyboard and related changes for u1000 device
+====================================================
+Date: 2020/01/27 +0800
+MK/SK key added kcv check when loading key
+changes include:
+1.MK/SK key added kcv check when loading key in managetxn.c
+2.void transaction added field 37
+====================================================
+Date: 2020/01/21 +0800
+Added screensaver
+changes include:
+1.Added screensaver images: filepath.txt
+2.Display screen saver(main.c:DispScreenSaver)
+====================================================
+Date: 2020/01/21 +0800
+update libemvl3.so
+changes include:
+1.update libemvl3.so, (the same as C:\NPT_SDK\Linux\Core\EMV\L3_SDK\lib)
+2.PerformTransaction: set LED attr:0x1F8129(off the led)
+====================================================
+Date: 2020/01/20 +0800
+added gcc4.2.0 compilation for ME51R device
+changes include:
+build/makefile and related changes(switch some files format to UTF-8, such as wifi.h)
+====================================================
+Date: 2020/01/20 +0800
+fix obtain pan and the second track data error
+changes include:
+TxnObtainFromRecord in txn_process.c
+====================================================
+Date: 2020/01/15 +0800
+change MAC_TYPE_X99 to MAC_TYPE_X919
+changes include:
+CheckMac: change MAC_TYPE_X99 to MAC_TYPE_X919
+====================================================
+Date: 2020/01/07 +0800
+for paywave should not be trated as a "decline" of the refund
+changes include:
+emv_l3process.c: PerformTransaction
+====================================================
+Date: 2020/01/06 +0800
+change XTMS to TOMS
+changes include:
+note:
+ please configure "-D USE_TOMS" in makefile if want to use toms function, and install the matching firmware
+ (such as SP830 needs to install greater than or equal to 7.2.0)
+====================================================
+Date: 2020/01/05 +0800
+Adjust text to center display to prevent display from crossing boundaries
+changes include:
+lui.c:
+unSHeight is the height of text.
+gnDispLineSpacing/2  --> (gnDispLineHeight - unSHeight)/2;
+====================================================
+Date: 2020/12/15 +0800
+change font file to roboto.ttf
+changes include:
+1.change arial.ttf file to roboto.ttf and related changes(print.c)
+====================================================
+Date: 2020/12/02 +0800
+improve the Settlement of statistical.
+changes include:
+settle.c -> DealSettle: move void transaction to credit
+
+====================================================
+Date: 2020/12/01 +0800
+added MIR and Multibanco AID to file Newland_L3_configuration.xml
+
+====================================================
+Date: 2020/11/20 +0800
+fix error return value for EmvPackField55 when tlvlist is empty(emvl3 pinpad)
+changes include:
+EmvPackField55: uint-->int
+
+====================================================
+Date: 2020/11/06 +0800
+improve the processing of emvl3 pinpad.
+changes include:
+1.Load the EMV parameter when the POS device or Pinpad has no EMV parameter
+2.added support for cancel read card instruction
+3.remove a simple setting: SetFuncPinpadCallBack 
+
+====================================================
+commit 18300de49c5ba4cb4cfa5f9f39b153dbfb06fef6
+Date:   Fri Oct 30 11:56:33 2020 +0800
+support for Linux console debug
+changes include:
+1.added support for Linux console debug, so now we can select FILE, PORT or CONSOLE for the debug messages
+
+====================================================
+commit cd19d9aad2a514534e9d10d858ad0db504991898
+Date:   Thu Oct 29 17:06:40 2020 +0800
+Synchronize Core SDK changes, Core SDK version:greater than or equal to 8.0.3
+changes include:
+1.SDK directory structure adjustment, Makefile changes
+
+=====================================================
+commit 69a900f5638b950811b7846fb34111d38fded8e9
+Date:   Thu Oct 29 14:59:48 2020 +0800
+update libtms.so((NAPI_SysGetInfo changed))
+
+=====================================================
+commit 0dedcaadc60f2df233d30e7b79f1f85f1bfb6edc
+Date:   Fri Oct 23 13:54:22 2020 +0800
+fixed the issue: DNS fail when Enable ETH DHCP
+
+=====================================================
+commit 423fc040e550bec13be86677b6b37f62215258fe
+Date:   Thu Oct 22 18:15:16 2020 +0800
+added support for emvl3 pinpad, we can read chip card through Pinpad, and also improve the processing of pinpad instruction
+changes include:
+1.added EMV Command Order Set: init EMV module,  load EMV parameter, perform/complete/terminate transaciton and so on.
+2.improve the processing of pinpad instruction
+
+=====================================================
+commit 7524135272c02d0e70901d07d7fbbc91f7cff072
+Date:   Thu Oct 22 17:12:20 2020 +0800
+imporve Makefile
+
+====================================================
+commit 6f730305f542bce052d6c7c14086f5dfdc979e17
+Date:   Thu Oct 22 17:00:57 2020 +0800
+Synchronize file napi_wlm.h changes(ST_PPP_CFG), correspond to Core SDK version:greater than or equal to 8.0.1
+
+====================================================
+commit 5b8069b0c926c743fd94bb4f3b2a8fc21c1bda48
+Date:   Thu Oct 22 16:25:07 2020 +0800
+fix: ssl reading timeout processing
+
+====================================================
+commit 4dc42c2918655fc6af9e67f0b6ad16f9789349cc
+Date:   Fri Oct 9 17:05:52 2020 +0800
+fix loading reversal data error
+changes include:
+param.c : ExportPosParam-->ASSERT_FAIL(LoadTagParam(FILE_APPREVERSAL, (void *)&gstReversalParam));
+
+====================================================
+commit 3e125b4a3d8ce610ce6dc00c8481aa538b031f20
+Date:   Tue Sep 8 09:21:41 2020 +0800
+change batch file and makefile according to new SDK
+
+====================================================
+commit d412ce6728b1949372bfc262fe13583f3aeb4fff
+Date:   Thu Jul 23 11:41:51 2020 +0800
+
+first commit: the bankdemo support kinds of transactions: SALE/VOID/SETTLEMENT/BALANCE and so on
+

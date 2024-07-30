@@ -1,0 +1,3 @@
+errorcode.o: module/libtool/src/errorcode.c module/libtool/inc/ltool.h \
+ module/libtool/inc/lfilesystem.h \
+ C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi.h

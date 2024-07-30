@@ -1,0 +1,1 @@
+des.o: module/libsecurity/src/des.c module/libsecurity/inc/des.h

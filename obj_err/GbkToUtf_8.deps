@@ -1,0 +1,2 @@
+GbkToUtf_8.o: module/libtool/src/GbkToUtf_8.c \
+ module/libtool/inc/GbkToUtf_8.h

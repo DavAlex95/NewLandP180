@@ -1,0 +1,7 @@
+lmenu.o: module/libui/src/lmenu.c module/libui/inc/uitool.h \
+ module/libui/inc/lui.h C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi.h \
+ module/libui/inc/lmenu.h module/libui/inc/linput.h \
+ module/libtool/inc/ltool.h module/libtool/inc/lfilesystem.h \
+ module/libui/inc/ldisp.h \
+ C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi_display.h \
+ C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi.h

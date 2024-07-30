@@ -1,0 +1,2 @@
+linuxsocket.o: module/libcomm/src/linuxsocket.c \
+ module/libcomm/inc/linuxsocket.h

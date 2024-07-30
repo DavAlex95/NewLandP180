@@ -1,0 +1,53 @@
+process.o: module/libcomm/src/process.c libapi/libapiinc.h \
+ C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi_display.h \
+ C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi.h \
+ C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi_kb.h \
+ C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi_sysinfo.h \
+ C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi_power.h \
+ C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi_led.h \
+ C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi_printer.h \
+ C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi_datetime.h \
+ C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi_beeper.h \
+ C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi_serialport.h \
+ C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi_smartcard.h \
+ C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi_crypto.h \
+ module/libui/inc/lui.h C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi.h \
+ module/libcomm/inc/lcomm.h \
+ C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi_wifi.h \
+ module/libtool/inc/ltool.h module/libtool/inc/lfilesystem.h \
+ module/libsecurity/inc/lsecurity.h libapi/emvl3.h \
+ module/libprint/inc/lprint.h inc/virtualpad.h libapi/emvl3.h \
+ libapi/emvconfig.h libapi/emverrcode.h \
+ C:\\NPT_SDK\\Linux\\Core\\third-party\\openssl\\1.0.2m/openssl/x509.h \
+ C:\\NPT_SDK\\Linux\\Core\\third-party\\openssl\\1.0.2m/openssl/e_os2.h \
+ C:\\NPT_SDK\\Linux\\Core\\third-party\\openssl\\1.0.2m/openssl/opensslconf.h \
+ C:\\NPT_SDK\\Linux\\Core\\third-party\\openssl\\1.0.2m/openssl/symhacks.h \
+ C:\\NPT_SDK\\Linux\\Core\\third-party\\openssl\\1.0.2m/openssl/buffer.h \
+ C:\\NPT_SDK\\Linux\\Core\\third-party\\openssl\\1.0.2m/openssl/ossl_typ.h \
+ C:\\NPT_SDK\\Linux\\Core\\third-party\\openssl\\1.0.2m/openssl/evp.h \
+ C:\\NPT_SDK\\Linux\\Core\\third-party\\openssl\\1.0.2m/openssl/bio.h \
+ C:\\NPT_SDK\\Linux\\Core\\third-party\\openssl\\1.0.2m/openssl/crypto.h \
+ C:\\NPT_SDK\\Linux\\Core\\third-party\\openssl\\1.0.2m/openssl/stack.h \
+ C:\\NPT_SDK\\Linux\\Core\\third-party\\openssl\\1.0.2m/openssl/safestack.h \
+ C:\\NPT_SDK\\Linux\\Core\\third-party\\openssl\\1.0.2m/openssl/opensslv.h \
+ C:\\NPT_SDK\\Linux\\Core\\third-party\\openssl\\1.0.2m/openssl/objects.h \
+ C:\\NPT_SDK\\Linux\\Core\\third-party\\openssl\\1.0.2m/openssl/obj_mac.h \
+ C:\\NPT_SDK\\Linux\\Core\\third-party\\openssl\\1.0.2m/openssl/asn1.h \
+ C:\\NPT_SDK\\Linux\\Core\\third-party\\openssl\\1.0.2m/openssl/bn.h \
+ C:\\NPT_SDK\\Linux\\Core\\third-party\\openssl\\1.0.2m/openssl/ec.h \
+ C:\\NPT_SDK\\Linux\\Core\\third-party\\openssl\\1.0.2m/openssl/ecdsa.h \
+ C:\\NPT_SDK\\Linux\\Core\\third-party\\openssl\\1.0.2m/openssl/ecdh.h \
+ C:\\NPT_SDK\\Linux\\Core\\third-party\\openssl\\1.0.2m/openssl/rsa.h \
+ C:\\NPT_SDK\\Linux\\Core\\third-party\\openssl\\1.0.2m/openssl/dsa.h \
+ C:\\NPT_SDK\\Linux\\Core\\third-party\\openssl\\1.0.2m/openssl/dh.h \
+ C:\\NPT_SDK\\Linux\\Core\\third-party\\openssl\\1.0.2m/openssl/sha.h \
+ C:\\NPT_SDK\\Linux\\Core\\third-party\\openssl\\1.0.2m/openssl/x509_vfy.h \
+ C:\\NPT_SDK\\Linux\\Core\\third-party\\openssl\\1.0.2m/openssl/lhash.h \
+ C:\\NPT_SDK\\Linux\\Core\\third-party\\openssl\\1.0.2m/openssl/pkcs7.h \
+ module/libcomm/inc/commtool.h module/libcomm/inc/lcomm.h \
+ module/libcomm/inc/commerror.h module/libcomm/inc/port.h \
+ module/libcomm/inc/asyndial.h module/libcomm/inc/syndial.h \
+ module/libcomm/inc/wireless.h module/libcomm/inc/eth.h \
+ module/libcomm/inc/wifi.h module/libcomm/inc/process.h \
+ module/libcomm/inc/sslsockets.h \
+ C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi_net.h

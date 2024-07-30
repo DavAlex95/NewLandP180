@@ -1,0 +1,4 @@
+lQrEncode.o: module/libtool/src/lQrEncode.c module/libtool/inc/ltool.h \
+ module/libtool/inc/lfilesystem.h \
+ C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi.h \
+ module/libtool/inc/lQrEncode.h module/libtool/inc/GbkToUtf_8.h

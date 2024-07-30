@@ -1,0 +1,11 @@
+wireless.o: module/libcomm/src/wireless.c module/libcomm/inc/wireless.h \
+ module/libcomm/inc/lcomm.h \
+ C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi_wifi.h \
+ C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi.h \
+ module/libcomm/inc/commtool.h module/libtool/inc/ltool.h \
+ module/libtool/inc/lfilesystem.h \
+ C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi.h \
+ module/libcomm/inc/process.h module/libcomm/inc/commerror.h \
+ module/libui/inc/lui.h \
+ C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi_wlm.h \
+ C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi_net.h

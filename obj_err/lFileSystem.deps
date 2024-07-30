@@ -1,0 +1,2 @@
+lFileSystem.o: module/libtool/src/lFileSystem.c \
+ C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi.h

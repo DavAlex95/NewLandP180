@@ -1,0 +1,5 @@
+softalg.o: module/libsecurity/src/softalg.c \
+ module/libsecurity/inc/softalg.h \
+ C:\\NPT_SDK\\Linux\\Core\\api\\napi\\inc/napi.h \
+ module/libsecurity/inc/des.h module/libtool/inc/ltool.h \
+ module/libtool/inc/lfilesystem.h
