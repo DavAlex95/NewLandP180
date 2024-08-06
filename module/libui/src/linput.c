@@ -345,7 +345,8 @@ static void InitIptInfo(int nLineno, int nClumno, char *pszDispStr, int nMode)
 	strcpy(gstIptInfo.szGetBuf, pszDispStr);
 	gstIptInfo.nGetNum = strlen(pszDispStr);
 	
-	if(nMode == INPUT_MODE_PASSWD)
+	//if(nMode == INPUT_MODE_PASSWD)
+	if(nMode == INPUT_MODE_PASSWD || gstIptInfo.nMode == INPUT_MODE_SECURITYCODE || gstIptInfo.nMode == INPUT_MODE_SECURITYCODE2)
 	{
 		memset(gstIptInfo.szTmp, '*', gstIptInfo.nGetNum);
 		gstIptInfo.nStartX = (nClumno-1)*gnDispFontSize;//Cursor X of first line
@@ -432,7 +433,8 @@ static void InsIptStr(char c)
 		AmttoStr(gstIptInfo.szTmp, gstIptInfo.szGetBuf);
 		gstIptInfo.nCurOffset += nAddLen;
 	}
-	else if(gstIptInfo.nMode == INPUT_MODE_PASSWD)
+	//else if(gstIptInfo.nMode == INPUT_MODE_PASSWD)
+	else if(gstIptInfo.nMode == INPUT_MODE_PASSWD || gstIptInfo.nMode == INPUT_MODE_SECURITYCODE || gstIptInfo.nMode == INPUT_MODE_SECURITYCODE2)
 	{
 		InsChaToStr(c, gstIptInfo.nCurOffset , gstIptInfo.szGetBuf);
 		gstIptInfo.szTmp[gstIptInfo.nGetNum] = '*';
@@ -534,7 +536,8 @@ static void DelIptStr(void)
 		AmttoStr(gstIptInfo.szTmp, gstIptInfo.szGetBuf);
 		gstIptInfo.nCurOffset -= nSubLen;
 	}
-	else if(gstIptInfo.nMode == INPUT_MODE_PASSWD)
+	//else if(gstIptInfo.nMode == INPUT_MODE_PASSWD)
+	else if(gstIptInfo.nMode == INPUT_MODE_PASSWD || gstIptInfo.nMode == INPUT_MODE_SECURITYCODE || gstIptInfo.nMode == INPUT_MODE_SECURITYCODE2)
 	{
 		DelChaFromStr(gstIptInfo.szGetBuf, gstIptInfo.nCurOffset-1);
 		gstIptInfo.szTmp[gstIptInfo.nGetNum-1] = 0;
@@ -843,6 +846,19 @@ int Inputxy(int nClumno, int nLineno, char* pszOut, int* pnOutLen, int nMinLen, 
 		case KEY_ENTER:
 			if ((gstIptInfo.nGetNum >= nMinLen) && (gstIptInfo.nGetNum <= nMaxLen))
 			{
+					if (nEditMask == INPUT_MODE_SECURITYCODE || nEditMask == INPUT_MODE_SECURITYCODE2)
+					{
+						if(nEditMask==INPUT_MODE_SECURITYCODE){
+								if(gstIptInfo.nGetNum>nMinLen && gstIptInfo.nGetNum<nMaxLen){
+								break;
+							}
+						}else{
+								if(gstIptInfo.nGetNum>nMinLen && gstIptInfo.nGetNum<nMaxLen-1){
+								break;
+							}
+						}
+						
+					}
 				GetIptStr(pszOut, pnOutLen);
 				return APP_SUCC;
 			}
@@ -911,6 +927,38 @@ int ProInputDlg(const char *pszTitle, const char *pszContent, const char* psInfo
 	return Inputxy (1, nLineno, pszOut, pnOutLen, nMinLen, nMaxLen, nTimeOut, nEditMask);
 }
 
+int ProInputDlgWithAmount(const char *amount,const char *pszTitle, const char *pszContent, const char* psInfo, 
+                        int nClumno, int nLineno, char *pszOut, int *pnOutLen,int nMinLen, 
+                        int nMaxLen, int nTimeOut, int nEditMask)
+{
+	uint unWidth, unHeight;
+
+	if (pszOut == NULL || pnOutLen == NULL)
+	{
+		return APP_FAIL;
+	}
+	NAPI_ScrGetFontSize(&unWidth, &unHeight);
+	PubClearAll();
+	if (amount != NULL)
+	{
+		PubDisplayTitle((char*)amount);
+	}
+	if (pszTitle != NULL)
+	{
+		PubDisplayStr(DISPLAY_MODE_CLEARLINE, 2, 1, (char*)pszTitle);
+	}
+	if (pszContent != NULL && strlen(pszContent) != 0)
+	{
+		PubDisplayStr(DISPLAY_MODE_CLEARLINE, 3, 1, (char*)pszContent);
+	}
+    if (psInfo != NULL)
+    {
+    	PubDisplayStr(DISPLAY_MODE_CLEARLINE, nLineno+2,1,  (char*)psInfo);
+    }
+	return Inputxy (nClumno, nLineno, pszOut, pnOutLen, nMinLen, nMaxLen, nTimeOut, nEditMask);
+}
+
+
 int InputDlg(const char *pszTitle, const char *pszContent, char *pszOut, int *pnOutLen,
 	int nMinLen, int nMaxLen, int nTimeOut, int nEditMask)
 {
@@ -931,6 +979,7 @@ int ProInputDate(const char *pszTitle, const char *pszContent, const char * pStr
 	int			nOutLen = 0;
 	char		szTempDate[15];
 	char		cFlag = 0;
+	char tmpDateMMYY[4];
 
 	if (pszDate == NULL)
 	{
@@ -940,6 +989,7 @@ int ProInputDate(const char *pszTitle, const char *pszContent, const char * pStr
 	{
 	case INPUT_DATE_MODE_MMDD:
 	case INPUT_DATE_MODE_YYMM:
+	case INPUT_DATE_MODE_MMYY:
 		nMinLen = 1;
 		nMaxLen = 4;
 		break;
@@ -953,6 +1003,7 @@ int ProInputDate(const char *pszTitle, const char *pszContent, const char * pStr
 		break;
 	case INPUT_DATE_MODE_MMDD_NULL:
 	case INPUT_DATE_MODE_YYMM_NULL:
+	case INPUT_DATE_MODE_MMYY_NULL:
 		nMinLen = 0;
 		nMaxLen = 4;
 		break;
@@ -995,6 +1046,19 @@ int ProInputDate(const char *pszTitle, const char *pszContent, const char * pStr
 			memcpy( szTempDate + 4, pszDate, strlen(pszDate) );
 			szTempDate[8] = '\0';
 			break;
+		case INPUT_DATE_MODE_MMYY:
+      	case INPUT_DATE_MODE_MMYY_NULL:
+			if (nOutLen != 4) {
+			cFlag = 1;
+			break;
+			}
+			memcpy(tmpDateMMYY, pszDate + 2, 2);
+			memcpy(tmpDateMMYY + 2, pszDate, 2);
+			strcpy(szTempDate + 6, "01");
+			memcpy(szTempDate + 2, tmpDateMMYY, strlen(tmpDateMMYY) - 1);
+			szTempDate[8] = '\0';
+
+			break;
 		case INPUT_DATE_MODE_YYMM:
 		case INPUT_DATE_MODE_YYMM_NULL:
 			if ( nOutLen != 4 )
@@ -1031,14 +1095,16 @@ int ProInputDate(const char *pszTitle, const char *pszContent, const char * pStr
 		}
 		if ( 1 == cFlag )
 		{
-			PubMsgDlg("Date error", "\nInvalid date input", 3, 3);
+			PubMsgDlg("FECHA INVALIDA", " ", 3, 3);
+			memset(pszDate,0x00,strlen(pszDate));
 			cFlag = 0;
 			continue;
 		}
 
 		if (PubIsValidDate(szTempDate) != APP_SUCC )
 		{
-			PubMsgDlg("Illegal date", "\nInvalid date input", 3, 3);
+			PubMsgDlg("FECHA INVALIDA"," ", 3, 3);
+			memset(pszDate,0x00,strlen(pszDate));
 			continue;
 		}
 		return APP_SUCC;
@@ -1047,6 +1113,147 @@ int ProInputDate(const char *pszTitle, const char *pszContent, const char * pStr
 }
 
 
+int ProInputDateWithAmount(const char *amount, const char *pszTitle, const char *pszContent, const char * pStr, \
+                int nClumno, int nLineno, char *pszDate, int nFormat, int nTimeOut)
+{
+	int			nMinLen = 0;
+	int			nMaxLen = 0;
+	int			nRet = 0;
+	int			nOutLen = 0;
+	char		szTempDate[15];
+	char		cFlag = 0;
+	char tmpDateMMYY[4];
+
+	if (pszDate == NULL)
+	{
+		return APP_FAIL;
+	}
+	switch (nFormat)
+	{
+	case INPUT_DATE_MODE_MMDD:
+	case INPUT_DATE_MODE_YYMM:
+	case INPUT_DATE_MODE_MMYY:
+		nMinLen = 1;
+		nMaxLen = 4;
+		break;
+	case INPUT_DATE_MODE_YYMMDD:
+		nMinLen = 1;
+		nMaxLen = 6;
+		break;
+	case INPUT_DATE_MODE_YYYYMMDD:
+		nMinLen = 1;
+		nMaxLen = 8;
+		break;
+	case INPUT_DATE_MODE_MMDD_NULL:
+	case INPUT_DATE_MODE_YYMM_NULL:
+	case INPUT_DATE_MODE_MMYY_NULL:
+		nMinLen = 0;
+		nMaxLen = 4;
+		break;
+	case INPUT_DATE_MODE_YYMMDD_NULL:
+		nMinLen = 0;
+		nMaxLen = 6;
+		break;
+	case INPUT_DATE_MODE_YYYYMMDD_NULL:
+		nMinLen = 0;
+		nMaxLen = 8;
+		break;
+	default:
+		PubMsgDlg("Date input", "\nInvalid date input", 3, 3);
+		return APP_FAIL;
+	}
+	for (; ;)
+	{
+        nRet = ProInputDlgWithAmount(amount ,pszTitle, pszContent, pStr, nClumno, nLineno, pszDate, &nOutLen, nMinLen, nMaxLen, nTimeOut, INPUT_MODE_NUMBER);
+		if (nRet != APP_SUCC)
+		{
+			return nRet;
+		}
+
+		/*if ( 0 == nOutLen )
+		{
+			return APP_SUCC;
+		}*/
+
+		memset ( szTempDate, 0, sizeof(szTempDate) );
+		PubGetCurrentDatetime(szTempDate);
+		switch ( nFormat )
+		{
+		case INPUT_DATE_MODE_MMDD:
+		case INPUT_DATE_MODE_MMDD_NULL:
+			if ( nOutLen != 4 )
+			{
+				cFlag = 1;
+				break;
+			}
+			memcpy( szTempDate + 4, pszDate, strlen(pszDate) );
+			szTempDate[8] = '\0';
+			break;
+		case INPUT_DATE_MODE_MMYY:
+      	case INPUT_DATE_MODE_MMYY_NULL:
+			if (nOutLen != 4) {
+			cFlag = 1;
+			break;
+			}
+			memcpy(tmpDateMMYY, pszDate + 2, 2);
+			memcpy(tmpDateMMYY + 2, pszDate, 2);
+			strcpy(szTempDate + 6, "01");
+			memcpy(szTempDate + 2, tmpDateMMYY, strlen(tmpDateMMYY) - 1);
+			szTempDate[8] = '\0';
+
+			break;
+		case INPUT_DATE_MODE_YYMM:
+		case INPUT_DATE_MODE_YYMM_NULL:
+			if ( nOutLen != 4 )
+			{
+				cFlag = 1;
+				break;
+			}
+
+			strcpy(szTempDate + 6, "01");
+			memcpy( szTempDate +2, pszDate , strlen(pszDate) );
+			szTempDate[8] = '\0';
+			break;
+		case INPUT_DATE_MODE_YYMMDD:
+		case INPUT_DATE_MODE_YYMMDD_NULL:
+			if ( nOutLen != 6 )
+			{
+				cFlag = 1;
+				break;
+			}
+			memcpy( szTempDate +2, pszDate, strlen(pszDate));
+			szTempDate[8] = '\0';
+			break;
+		case INPUT_DATE_MODE_YYYYMMDD:
+		case INPUT_DATE_MODE_YYYYMMDD_NULL:
+			if ( nOutLen != 8 )
+			{
+				cFlag = 1;
+				break;
+			}
+			memset( szTempDate, 0, sizeof(szTempDate) );
+			memcpy( szTempDate, pszDate, strlen(pszDate) );
+			szTempDate[8] = '\0';
+			break;
+		}
+		if ( 1 == cFlag )
+		{
+			PubMsgDlg("FECHA INVALIDA", " ", 3, 3);
+			memset(pszDate,0x00,strlen(pszDate));
+			cFlag = 0;
+			continue;
+		}
+
+		if (PubIsValidDate(szTempDate) != APP_SUCC )
+		{
+			PubMsgDlg("FECHA INVALIDA"," ", 3, 3);
+			memset(pszDate,0x00,strlen(pszDate));
+			continue;
+		}
+		return APP_SUCC;
+	}
+	return APP_SUCC;
+}
 
 int InputCNMode(const char *pszTitle, const char *pszContent,char *pszStr, int *pnInputLen, int nMinLen, int nMaxLen, int nImeMode)
 {

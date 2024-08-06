@@ -18,6 +18,11 @@
 #include <locale.h>
 #include <langinfo.h>
 
+
+STSYSTEM stSystemSafe;
+int lockGuard = 0;
+
+
 /**
 * internal function statement
 */

@@ -125,3 +125,73 @@ int emvDebug(const char *psLog, uint nLen)
 	return 0;
 }
 
+static void dump(char *in_buf, int offset, int num_bytes, int ascii_rep) {
+  int index = 0;
+  int inMaxChr;
+  char temp_buf[10];
+  char disp_buf[500];
+
+  if (ascii_rep == TRUE) {
+    if (num_bytes > 16) {
+      // disp_buf overflow!
+      TRACE("dump ERR - num_bytes=%d > 15", num_bytes);
+      return;
+    }
+    inMaxChr = 16;
+  } else {
+    if (num_bytes > 23) {
+      // disp_buf overflow!
+      TRACE("dump ERR - num_bytes=%d > 20", num_bytes);
+      return;
+    }
+    inMaxChr = 23;
+  }
+
+  memset(temp_buf, 0, sizeof(temp_buf));
+  memset(disp_buf, 0, sizeof(disp_buf));
+  sprintf(temp_buf, "%04X | ", offset);
+  strcat(disp_buf, temp_buf);
+  for (index = 0; index < inMaxChr; ++index) {
+    memset(temp_buf, 0, sizeof(temp_buf));
+    if (index < num_bytes)
+      sprintf(temp_buf, "%02X ", (int)(unsigned char)in_buf[offset + index]);
+    else
+      strcpy(temp_buf, "   ");
+
+    strcat(disp_buf, temp_buf);
+
+    if (!((index + 1) % 8) && ((index + 1) < inMaxChr)) strcat(disp_buf, "  ");
+  }
+
+  if (ascii_rep == TRUE) {
+    char c;
+    strcat(disp_buf, "| ");
+    for (index = 0; index < num_bytes; ++index) {
+      memset(temp_buf, 0, sizeof(temp_buf));
+      c = in_buf[offset + index];
+      if (c < 0x20 || c > 0x7E) c = '.';
+      sprintf(temp_buf, "%c", c);
+      strcat(disp_buf, temp_buf);
+    }
+  }
+
+  TRACE("%s", disp_buf);
+}
+
+void pdump(void *pvdMem, int num_bytes, char *title) {
+  int offset = 0;
+  int r = 0;
+  char *in_buf;
+
+  if (strlen(title) > 0) TRACE("%s (%d):", title, num_bytes);
+
+  if (num_bytes < 0) num_bytes = 0;
+
+  in_buf = pvdMem;
+  while (offset < num_bytes) {
+    r = num_bytes - offset;
+    if (r > 16) r = 16;
+    dump(in_buf, offset, r, TRUE);
+    offset += r;
+  }
+}

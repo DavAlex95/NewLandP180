@@ -45,14 +45,15 @@ LIBL2EMVDIR = $(SDKDIR)\\Linux\\Core\\EMV\\L2_SDK\\lib\\gcc_4.9.4
 SDKSYSLIB = $(SDKDIR)\\Linux\\Compiler\\4.9.4\\arm-linux-gnueabi\\libc\\usr\\lib
 
 # -D USE_NTOMS  NTOMS means TOMS 2.0
-CFLAGS += -Wall -Werror -DNDEBUG $(CROSS_CFLAGS) -O -g $(INCPATH)  -D USE_NTOMS
+# CFLAGS += -Wall -Werror -DNDEBUG $(CROSS_CFLAGS) -O -g $(INCPATH)  -D USE_NTOMS
+CFLAGS += -Werror -DNDEBUG $(CROSS_CFLAGS) -O -g $(INCPATH)  -D USE_NTOMS
 CFLAGS += -funwind-tables
 CFLAGS += -DAPP_VERSION=\"$(PARAMINI_VER)\"
 # File search path
 VPATH = src $(PRINTSRCDIR) $(SECURITYISRCDIR) $(UISRCDIR) $(TOOLSRCDIR) $(COMMSRCDIR) $(OBJDIR)
 
 # Header file search path
-INCLPATH = -I$(INCDIR) -I$(PRINTINCDIR) -I$(SECURITYIINCDIR) -I$(UIINCDIR) -I$(TOOLINCDIR) -I$(COMMINCDIR)  -I$(LIBINCDIR) -I$(SDKNAPIINC) -I$(OPENSSLDIR)
+INCLPATH = -I$(INCDIR) -I$(PRINTINCDIR) -I$(SECURITYIINCDIR) -I$(UIINCDIR) -I$(TOOLINCDIR) -I$(COMMINCDIR)  -I$(LIBINCDIR) -I$(SDKNAPIINC) -I$(OPENSSLDIR) 
 
 # Program link parameters
 LDFLAGS += -L$(SDKAPILIB) -lndk
@@ -73,6 +74,8 @@ LDFLAGS += -L$(LIBAPPDIR) -lemvl3
 # App Lib for TOMS 2.0
 LDFLAGS += -L$(LIBAPPDIR) -lconfig
 LDFLAGS += -L$(LIBAPPDIR) -lntoms
+LDFLAGS += -L$(LIBAPPDIR) -lntoms
+#LDFLAGS += -Llib -lmbedcrypto
 
 # model such as SP630/sp630Pro/sp830/sp930/U1000/ME60, these are compiled by gcc4.9.4
 MODEL = GCC494

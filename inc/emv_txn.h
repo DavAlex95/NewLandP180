@@ -93,7 +93,7 @@ typedef struct
 
 typedef struct
 {
-	char cSignatureFlag;					/**<IS need sign (1-YES, 0£­NO)*/
+	char cSignatureFlag;					/**<IS need sign (1-YES, 0??NO)*/
 	char sTC[8];							/**<IC TC*/
 	char sTVR[5];							/**<TVR*/
 	char sTSI[2];							/**<TSI*/
@@ -128,6 +128,7 @@ extern int EmvGetRecordRecNum(int);
 extern int EmvSaveRecord(int , const STSYSTEM *);
 extern int EmvClearRecord(void);
 extern int EmvPackField55(const char, char *, int *);
+extern int EmvPackTLVData(uint nTagList[ ], uint numTagList, char *pchTagList, int *inTagList);
 extern int EmvAddtionRecord(STTRANSRECORD *);
 extern void EmvOfflineDenial(char *pszTitle, STSYSTEM* pstSystem);
 extern void EmvOfflineAccept(char *pszTitle, STSYSTEM *pstSystem);

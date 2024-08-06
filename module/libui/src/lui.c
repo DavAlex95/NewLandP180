@@ -863,6 +863,39 @@ int PubExtInputDlg(const char *pszTitle, const char *pszContent, char* psInfo,
 
 }
 
+
+/**
+* @brief Extension input dialog box with amount
+* @param [in] amount     Amount 
+* @param [in] pszTitle   Title
+* @param [in] pszContent Prompt content
+* @param [in] psInfo      If no need, set NULL
+* @param [in] nClumno   Column(from 1)
+* @param [in] nLineno   Line(from 1)
+* @param [in] nMinLen    Minimum length
+* @param [in] nMaxLen    Maximum length
+* @param [in] nTimeOut   Timeout
+* @param [in] nEditMask  Input mode---EM_INPUT_MODE
+* @param [out] pszOut    Output
+* @param [out] pnOutLen  Output length
+* @return 
+* @li APP_TIMEOUT Timeout
+* @li APP_FAIL    Abnormal
+* @li APP_QUIT    User cancel
+* @li APP_SUCC    Success
+* @li KEY_F1/KEY_F2 Refer to 'PubInputxy'
+*/
+int PubExtInputDlgWithAmount(const char *amount, const char *pszTitle, const char *pszContent, char* psInfo, 
+                int nClumno, int nLineno, char *pszOut, int *pnOutLen,int nMinLen, 
+                int nMaxLen, int nTimeOut, int nEditMask)
+{
+	if(nClumno < 0 || nLineno < 0 || nMinLen < 0 || nMaxLen < 0 || nMaxLen < nMinLen || nTimeOut < 0 || nEditMask < 0)
+		return APP_FAIL;
+
+	return ProInputDlgWithAmount(amount, pszTitle, pszContent, psInfo, nClumno, nLineno, pszOut, pnOutLen, nMinLen, nMaxLen, nTimeOut, nEditMask);
+
+}
+
 /**
 * @brief Prompt dialog box
 * @param [in] pszTitle   Title
@@ -1473,6 +1506,36 @@ int PubInputDate(const char *pszTitle, const char *pszContent, char *pszDate, in
 	}
 
 	return ProInputDate(pszTitle, pszContent, NULL, 1, 3, pszDate, nFormat, nTimeOut);
+}
+
+
+/**
+* @brief Extension input date dialog box with amount
+* @param [in] amount   Title
+* @param [in] pszTitle   Title
+* @param [in] pszContent Content
+* @param [in] pInfo      If no need, set NULL
+* @param [in] nClumno    Column(from 1)
+* @param [in] nLineno    Line(from 1)
+* @param [in] nFormat    Date format---EM_INPUT_DATE_MODE
+* @param [in] nTimeOut   Timeout
+* @param [out] pszDate   Date
+* @return 
+* @li APP_FAIL    	Abnormat
+* @li APP_TIMEOUT T	imeout
+* @li APP_QUIT    	Cancel
+* @li APP_SUCC    	Success
+* @li KEY_F1/KEY_F2 Refer to 'PubInputxy'
+*/
+int PubExtInputDateWithAmount(const char *amount, const char *pszTitle, const char *pszContent, const char *pInfo, 
+											int nClumno, int nLineno, char *pszDate,int nFormat, int nTimeOut)
+{
+	if(nClumno < 0 || nLineno < 0 || nFormat < 0 || nTimeOut < 0)
+	{
+		return APP_FAIL;
+	}
+
+	return ProInputDateWithAmount(amount, pszTitle, pszContent, pInfo, nClumno, nLineno, pszDate, nFormat, nTimeOut);
 }
 
 /**

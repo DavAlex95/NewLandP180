@@ -677,7 +677,7 @@ void setLanguage(void)
 			SetVarSystemLanguage(LANG_EN_US);
 			break;
 		case 2:
-			SetVarSystemLanguage(LANG_ZH_CN);
+			SetVarSystemLanguage(LANG_ES_MX);
 			break;
 		case 3:
 			SetVarSystemLanguage(LANG_CUSTOMIZED);

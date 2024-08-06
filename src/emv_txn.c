@@ -285,6 +285,30 @@ int EmvPackField55(const char cTransType, char *pszOutField55, int *pnOutField55
 	return APP_SUCC;
 }
 
+/*
+ *	@brief     get emv tag from Appdata, code in tlv string
+ *	@param          const char	iTransType	 , transaction type
+ *	@param          char 		*oField55		out put field55,
+ *(first 2 byte is length[BCD])
+ *	@return			APP_SUCC/APP_FAIL
+ */
+int EmvPackTLVData(uint nTagList[],
+                   uint numTagList,
+                   char *pchTagList,
+                   int *inTagList) {
+  uint nLen = 0;
+
+  nLen =
+      NAPI_L3GetTlvData(nTagList, numTagList, (uchar *)pchTagList, 255, 0x01);
+  TRACE("nLen = %d", nLen);
+  pdump(pchTagList, nLen, "EmvPackTLVData");
+  if (nLen <= 0) {
+    return APP_FAIL;
+  }
+  *inTagList = nLen;
+  return APP_SUCC;
+}
+
 /**
 *	@brief  clear emv transaction log
 *	@param	void

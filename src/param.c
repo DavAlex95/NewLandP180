@@ -741,6 +741,27 @@ void GetVarMerchantNameEn(char *pszValue)
 }
 
 /**
+ * @brief Get is use pinpad App mode
+ * @return
+ * @li YES
+ * @li NO
+ */
+YESORNO GetVarIsPinpadApp() {
+  //	TRACE("GetVarIsPinpadApp");
+
+  // FIXME: Ver por que la ME30S pierde parametros configurados
+  return YES;
+
+  /*   if (gstAppPosParam.cIsPinPadApp == YES) {
+      //		TRACE("cIsPinPadApp YES");
+      return YES;
+    } else {
+      //		TRACE("cIsPinPadApp NO");
+      return NO;
+    } */
+}
+
+/**
 * @brief Get is use pinpad
 * @return
 * @li YES
@@ -2729,6 +2750,11 @@ int SetFunctionIsSupportRF(void)
 void GetVarSoftVer(char* pszSoftVer)
 {
 	memcpy(pszSoftVer, APP_VERSION, 8);
+}
+
+void GetVarSoftVerAlt(char *pszSoftVer) { 
+	//memcpy(pszSoftVer, APP_VERSION_ALT, 8); 
+	memcpy(pszSoftVer, APP_VERSION, 8); 
 }
 
 int SetFunctionPinpadTimeOut(void)

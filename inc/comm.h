@@ -82,7 +82,8 @@ enum COMMTYPE
 	COMM_CDMA,			/**<CDMA*/
 	COMM_RS232,		/**<AUX*/
 	COMM_ETH,			/**<ETH*/
-	COMM_WIFI			/*WIFI*/
+	COMM_WIFI,			/*WIFI*/
+	COMM_USB			/**<USB*/
 };
 
 #define MAX_SEND_SIZE (MAX_PACK_SIZE + 20)

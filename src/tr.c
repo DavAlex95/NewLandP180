@@ -706,7 +706,7 @@ int SetCustomizedFont(EM_LANG emLang)
 	case LANG_EN_US:
 		strcpy((char*)szFontName, "roboto.ttf");
 		break;
-	case LANG_ZH_CN:
+	case LANG_ES_MX:
 	case LANG_CUSTOMIZED:
 		PubMsgDlg(NULL, "No font file.", 3, 3);
 		return APP_FAIL;

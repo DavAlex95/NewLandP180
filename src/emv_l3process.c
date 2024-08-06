@@ -184,7 +184,7 @@ static YESORNO CheckIsPayWave(const STSYSTEM *pstSystem)
 	return NO;
 }
 
-int PerformTransaction(char *pszTitle, STSYSTEM *pstSystem, int *pnInputMode)
+int PerformTransaction(char *pszTitle, STSYSTEM *pstSystem, int *pnInputMode, char pzsTransMode)
 {
     int nTlvLen = 0, nErrcode = 0;
     char cInputMode = *pnInputMode;

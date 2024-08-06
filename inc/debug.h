@@ -21,6 +21,8 @@ extern void DispTrace(char* lpszFormat, ...);
 extern void DispTraceHex(char* pszHexBuf, int nLen, char* lpszFormat, ...);
 extern int emvDebug(const char *psLog, uint nLen);
 extern int MenuEmvSetDebug(void);
+extern void  pdump(void *pvdMem, int num_bytes, char *title);
+
 
 #define TRACE_HEX(buf,len,title,args...) PubDebugData("[%s][%s][%d]>>>"""title,buf,len,__FILE__, __FUNCTION__, __LINE__,##args)
 #define TRACE(fmt,args...) PubDebug("[%s][%s][%d]>>>"""fmt,__FILE__, __FUNCTION__, __LINE__,##args)

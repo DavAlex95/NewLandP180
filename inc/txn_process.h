@@ -59,6 +59,7 @@ enum TRANSTYPE
 	TRANS_CASHBACK,
 	TRANS_OFFLINE,
 	TRANS_MAX,
+	TRANS_QPS,
 };
 
 enum TRANSTYPE_MANAGE
@@ -90,6 +91,12 @@ enum TRANS_STATUS
 	ADJUSTED = 0x02,       /* transaction has been adjusted */
 	SALECOMPLETED = 0x03,  /* Pre-authorization completed */
 	SENT_ADJUST = 0x04,  /* It has been sent before adjustment */
+};
+
+enum PIN_STATUS
+{
+	PIN_OK = 0x01,       	/* pin is no blocked */
+	PIN_BLOCK = 0x02,       /* pin is blocked */
 };
 
 typedef enum
@@ -128,9 +135,10 @@ typedef struct
 */
 typedef struct
 {
-	char cTransType;			
+	char cTransType;
 	char cTransAttr;
-	char cEMV_Status;		
+//	char cEMV_Status;
+	int cEMV_Status;  //Daee 02/02/2021
 	char szMsgID[4+1];		
 	char szPan[19+1];			/**<Field 2 */
 	char szProcCode[6+1];			/**<Field 3*/ 
@@ -145,15 +153,18 @@ typedef struct
 	char szCardSerialNo[3+1];		/**<Field 23 */ 
 	char szNii[3+1];				/**<Field 24 */
 	char szServerCode[2+1];		/**<Field 25 */
-	char szTrack2[37+1];			/**<Field 35 */
+	char szTrack2[40 + 1];		   /**<Field 35 */
 	char szTrack3[104+1];		/**<F36 */
+	char szCurrencyCode[3 + 1];	   /** Field 28 currency code */
 
 	char szRefnum[12+1];			/**<F37  */
 	char szAuthCode[6+1];		/**<F38 */
 	char szResponse[2+1];		/**<F39 */
+	char szAuthData[16 + 1]; /**<F91 */
+	int  inAuthData;         /**<F91 Len */
 	char szPosID[8+1];			/**<F41 TID */
 	char szShopID[15+1];			/**<F42 MID */
-	char szTrack1[75+1];			/**<F45 */
+	char szTrack1[79 + 1];	 /**<F45 */
 	char szCVV2[4+1];			/**<F48 CVV2*/
 	char szField57[999+1];			/**<F57 */
 	char szPin[8+1];				/**<F52 */
@@ -171,12 +182,16 @@ typedef struct
 	char szBatchNum[6+1];
 	char *psAddField;			/**<Addtional Field pointed to F55*/
 	int nAddFieldLen;				/**<Addtional Field len*/
-	
+	char merchantDesicion;
+	char tranxType[2 + 1];
+
 	char cPrintFlag;
 	char szHolderName[26+1];
 	char cPinAndSigFlag;		/**<PIN and SIGN flag */
 	char cCvmStatus;
 	char cGetPerformDataFlag;
+	int  iTimeout;    //*Timeout Get Card ppd*//  //Daee 30/01/2021
+	char pinBlock;	 //*<PIN block */  //Daee 16/06/2021
 }STSYSTEM;
 
 /**

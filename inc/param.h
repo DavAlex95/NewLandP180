@@ -62,7 +62,7 @@ typedef enum
 
 typedef enum {
 	LANG_EN_US 		= 0,
-	LANG_ZH_CN 		= 1,
+	LANG_ES_MX 		= 1,
 	LANG_CUSTOMIZED	= 2
 }EM_LANG;
 
@@ -206,6 +206,7 @@ extern void GetVarMerchantNameEn(char *);
 extern void GetVarAppType(char *);
 extern int SetVarAppType(const char *);
 extern void GetVarSoftVer(char *);
+extern void GetVarSoftVerAlt(char *);
 extern void GetVarAppVer(char *);
 extern YESORNO GetVarIsPinpad(void);
 extern int GetVarPinpadAuxNo(int *);

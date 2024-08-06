@@ -1,0 +1,11 @@
+*.o
+*.su
+*.bin
+*.elf
+*.map
+*.zip
+*.a
+*.so
+.vs*/*
+debug/*
+obj_err/*.o

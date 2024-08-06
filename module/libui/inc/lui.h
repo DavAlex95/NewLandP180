@@ -187,17 +187,21 @@ typedef enum
 	INPUT_MODE_NUMBER,				/**<Only number*/
 	INPUT_MODE_PASSWD,				/**<Shield the string with '*' */
 	INPUT_MODE_AMOUNT,				/**<Amount*/
+	INPUT_MODE_SECURITYCODE,		/**<Shield the string with '*' for CVV or 4DBC*/
+	INPUT_MODE_SECURITYCODE2,		/**<Shield the string with '*' for CVV*/
 	INPUT_MODE_NUMBERPOINT			/**<Number and point*/
 }EM_INPUT_MODE;
 
 typedef enum
 {
+	INPUT_DATE_MODE_MMYY,          /**< YYMM */
 	INPUT_DATE_MODE_YYMM,			/**< YYMM */ 
 	INPUT_DATE_MODE_MMDD,			/**< MMDD */ 
 	INPUT_DATE_MODE_YYMMDD,			/**< YYMMDD */ 
 	INPUT_DATE_MODE_YYYYMMDD,		/**< YYYYMMDD */ 
 	INPUT_DATE_MODE_MMDD_NULL,		/**< MMDD or skip */ 
 	INPUT_DATE_MODE_YYMM_NULL,		/**< YYMM or skip */ 
+	INPUT_DATE_MODE_MMYY_NULL,    /**< MMYY or skip */
 	INPUT_DATE_MODE_YYMMDD_NULL,	/**< YYMMDD or skip */ 
 	INPUT_DATE_MODE_YYYYMMDD_NULL	/**< YYYYMMDD or skip */ 
 }EM_INPUT_DATE_MODE;				/**<Input date mode*/
@@ -580,6 +584,32 @@ int PubExtInputDlg(const char *pszTitle, const char *pszContent, char *psInfo, \
                 int nClumno, int nLineno, char *pszOut, int *pnOutLen,int nMinLen, \
                 int nMaxLen, int nTimeOut, int nEditMask);
 
+
+/**
+* @brief Extension input dialog box with amount
+* @param [in] amount     Amount 
+* @param [in] pszTitle   Title
+* @param [in] pszContent Prompt content
+* @param [in] psInfo      If no need, set NULL
+* @param [in] nClumno   Column(from 1)
+* @param [in] nLineno   Line(from 1)
+* @param [in] nMinLen    Minimum length
+* @param [in] nMaxLen    Maximum length
+* @param [in] nTimeOut   Timeout
+* @param [in] nEditMask  Input mode---EM_INPUT_MODE
+* @param [out] pszOut    Output
+* @param [out] pnOutLen  Output length
+* @return 
+* @li APP_TIMEOUT Timeout
+* @li APP_FAIL    Abnormal
+* @li APP_QUIT    User cancel
+* @li APP_SUCC    Success
+* @li KEY_F1/KEY_F2 Refer to 'PubInputxy'
+*/
+int PubExtInputDlgWithAmount(const char *amount, const char *pszTitle, const char *pszContent, char* psInfo, 
+                int nClumno, int nLineno, char *pszOut, int *pnOutLen,int nMinLen, 
+                int nMaxLen, int nTimeOut, int nEditMask);
+
 /**
 * @brief Input Amount dialog box
 * @param [in] pszTitle   Title
@@ -612,6 +642,28 @@ int PubInputAmount(const char *pszTitle, const char *pszContent, char *pszAmount
 * @li KEY_F1/KEY_F2 Refer to 'PubInputxy'
 */
 int PubInputDate(const char *pszTitle, const char *pszContent, char *pszDate, int nFormat, int nTimeOut);
+
+
+/**
+* @brief Extension input date dialog box with amount
+* @param [in] amount   Title
+* @param [in] pszTitle   Title
+* @param [in] pszContent Content
+* @param [in] pInfo      If no need, set NULL
+* @param [in] nClumno    Column(from 1)
+* @param [in] nLineno    Line(from 1)
+* @param [in] nFormat    Date format---EM_INPUT_DATE_MODE
+* @param [in] nTimeOut   Timeout
+* @param [out] pszDate   Date
+* @return 
+* @li APP_FAIL    	Abnormat
+* @li APP_TIMEOUT T	imeout
+* @li APP_QUIT    	Cancel
+* @li APP_SUCC    	Success
+* @li KEY_F1/KEY_F2 Refer to 'PubInputxy'
+*/
+int PubExtInputDateWithAmount(const char *amount, const char *pszTitle, const char *pszContent, const char *pInfo, 
+											int nClumno, int nLineno, char *pszDate,int nFormat, int nTimeOut);
 
 /**
 * @brief Extension input date dialog box

@@ -15,6 +15,18 @@
 #include "libapiinc.h"
 #include "appinc.h"
 #include "pinpad.h"
+#include "pinpad_commands.h"
+
+#include <bines_table.h>
+#include <log.h>
+
+extern STSYSTEM stSystemSafe;
+extern int isC50Present;
+extern char panC50[20];
+extern char entryModeC50;
+extern char amountC50[12 + 1];
+char TRSEQCNTR[4 + 1] = {0x00, 0x00, 0x00, 0x00};
+
 
 const static STTRANSCFG gstTxnCfg[] = 
 {
@@ -53,6 +65,94 @@ const static STTRANSCFG gstTxnCfg[] =
 	{TRANS_ADJUST, "ADJUST", "0220", "210000", "00", CFG_SEARCH|CFG_AMOUNT|CFG_CARD|CFG_PRINT|CFG_TIPS
 		, {2,3,4,11,14,22,23,24,25,35,41,42,48,49,52,55,57,62,64}},
 };
+
+#define ASSERT_L3_RET(e)                \
+  {                                     \
+    int nRet = e;                       \
+    if (nRet != APP_SUCC) {             \
+      if (nRet == APP_QUIT) {           \
+        return L3_ERR_CANCEL;           \
+      } else if (nRet == APP_TIMEOUT) { \
+        return L3_ERR_TIMEOUT;          \
+      }                                 \
+      return L3_ERR_FAIL;               \
+    }                                   \
+  }
+
+int GetManualData(char gszExpriryDate[],
+                  char gszCvv[],
+                  int gszTimeOut,
+                  char szPan[],
+                  short PEM,
+                  TxnCommonData *txnCommonData) {
+  int nLen = 0;
+  char szDate[14 + 1] = {0};
+  char yearSys[2 + 1] = {0};
+  char yearCard[2 + 1] = {0};
+  int inYearSys = 0;
+  int inYearCard = 0;
+  char szDispAmt[13 + 1] = {0};
+  char auxgszAmount[20] = {0};
+
+  if (CheckIsNullOrEmpty(txnCommonData->chAmount, 12) == NO) {
+    // IMPRIME EL MONTO CON SIGNO DE "$"
+    ProAmtToDispOrPnt(txnCommonData->chAmount, szDispAmt);
+    strcat(auxgszAmount, "$ ");
+    PubAllTrim(szDispAmt);
+    strcat(auxgszAmount, szDispAmt);
+    PubAllTrim(auxgszAmount);
+  }
+
+  if (PEM == CMD_PEM_KBD && txnCommonData->inExpDateReq == 1) {
+    PubBeep(1);
+    ASSERT_L3_RET(PubExtInputDateWithAmount(
+        auxgszAmount, "  INGRESE FECHA DE   ", "  VENCIMIENTO (MMAA) ", NULL, 5,
+        4, gszExpriryDate, INPUT_DATE_MODE_MMYY_NULL, gszTimeOut));
+
+    PubGetCurrentDatetime(szDate);
+
+    memcpy(yearCard, gszExpriryDate + 2, 2);
+    memcpy(yearSys, szDate + 2, 2);
+    inYearSys = atoi(yearSys);
+    inYearCard = atoi(yearCard);
+
+    if (inYearCard < inYearSys) {
+      return kCardExpired;
+    }
+  }
+
+  if (txnCommonData->inCvvReq == 1) {
+    if (GetVarIsNeedCVV2() == YES && strlen(szPan) < 16) {
+      PubBeep(1);
+      if (txnCommonData->inTranType == 7) {
+        // VALIDATE IF IT IS AMEX
+        if (memcmp(szPan, "37", 2) == 0) {
+          ASSERT_L3_RET(PubExtInputDlgWithAmount(
+              auxgszAmount, "  INGRESE CODIGO DE  ", "  SEGURIDAD:  ", NULL, 5,
+              4, gszCvv, &nLen, 0, 4, gszTimeOut, INPUT_MODE_SECURITYCODE2));
+        } else {
+          ASSERT_L3_RET(PubExtInputDlgWithAmount(
+              auxgszAmount, "  INGRESE CODIGO DE  ",
+              "  SEGURIDAD:         ", NULL, 5, 4, gszCvv, &nLen, 0, 3,
+              gszTimeOut, INPUT_MODE_SECURITYCODE));
+        }
+
+      } else {
+        ASSERT_L3_RET(PubExtInputDlgWithAmount(
+            auxgszAmount, "  INGRESE CODIGO DE  ",
+            "  SEGURIDAD:         ", NULL, 5, 4, gszCvv, &nLen, 0, 4,
+            gszTimeOut, INPUT_MODE_SECURITYCODE2));
+      }
+
+    } else {
+      PubBeep(1);
+      ASSERT_L3_RET(PubExtInputDlgWithAmount(
+          auxgszAmount, "  INGRESE CODIGO DE  ", "  SEGURIDAD:         ", NULL,
+          5, 4, gszCvv, &nLen, 0, 3, gszTimeOut, INPUT_MODE_SECURITYCODE));
+    }
+  }
+  return L3_ERR_SUCC;
+}
 
 static int TxnCheckAllow(char cTransType, STTRANSRECORD *pstTransRecord, char *pszContent)
 {
@@ -995,7 +1095,8 @@ int TxnCommonEntry(char cTransType, int *pnInputMode)
 		{
 			nInputMode = *pnInputMode;		//input card from idle menu
 		}
-		ASSERT_HANGUP_QUIT(PerformTransaction(szTitle, &stSystem, &nInputMode));
+		//ASSERT_HANGUP_QUIT(PerformTransaction(szTitle, &stSystem, &nInputMode));
+		ASSERT_HANGUP_QUIT(PerformTransaction(szTitle, &stSystem, &nInputMode, TXN_FULLEMV));
 	}
 	else
 	{
@@ -1380,5 +1481,989 @@ int TxnWaitAnyKey(int nTimeout)
 	}
 
 	return nRet;
+}
+
+int TxnCommonEntryPinpad(char cTransType, TxnCommonData *txnCommonData) {
+  int nRet, nInputMode = INPUT_NO, nInputPinNum = 0;
+  int nOnlineResult = TRUE;
+  char szTitle[32 + 1] = {0};
+
+  STSYSTEM stSystem;
+
+  memset(&stSystem, 0, sizeof(STSYSTEM));
+
+  strcpy(szTitle, "PINPADAPP");
+
+  if (txnCommonData->inCommandtype == CMD_C50) {
+    memset(&stSystemSafe, 0, sizeof(STSYSTEM));
+    /**
+     * TimeOut
+     */
+    TRACE("Timeout:%d", txnCommonData->inTimeOut);
+    stSystemSafe.iTimeout = txnCommonData->inTimeOut;
+
+    /**
+     * Txn Type
+     */
+    stSystemSafe.cTransType = cTransType;
+    TRACE("stSystemSafe.cTransType: %c", stSystemSafe.cTransType);
+
+    switch (stSystemSafe.cTransType) {
+      case TRANS_SALE:
+        strcpy(stSystemSafe.szProcCode, "00");
+        break;
+      case TRANS_REFUND:
+        strcpy(stSystemSafe.szProcCode, "01");
+        break;
+      default:
+        strcpy(stSystemSafe.szProcCode, "00");
+        break;
+    }
+
+    /**
+     * Set Date & Time
+     */
+    PubSetPosDateTime(txnCommonData->chDate, "YYMMDD", txnCommonData->chTime);
+
+    /**
+     * input Amount
+     */
+    memcpy(stSystemSafe.szAmount, txnCommonData->chAmount, 12);
+    TRACE("Amount C50: %s", stSystemSafe.szAmount);
+
+    /**
+     * Curr Code
+     */
+    memcpy(stSystemSafe.szCurrencyCode, "\x04\x84", 2);
+
+    /**
+     * mrch decn
+     */
+    // Force Online Authorization
+
+    stSystemSafe.merchantDesicion = 0x00;
+
+    /**
+     * clear online pin
+     */
+    EmvClrOnlinePin();
+
+    if (CheckLowBattery() == RET_CMD_OK) {
+      /**
+       * Perform transactions on the MSR, contact and contactless card
+       * interfaces.
+       */
+      nRet =
+          PerformTransaction(szTitle, &stSystemSafe, &nInputMode, TXN_READPAN);
+      txnCommonData->status = stSystemSafe.cEMV_Status;
+    } else {
+      txnCommonData->status = kOtherFailure;
+    }
+
+    TRACE("PerformTransaction nRet[%d] status[%d]", nRet,
+          txnCommonData->status);
+
+    if (txnCommonData->status == L3_TXN_DECLINE ||
+        txnCommonData->status == L3_TXN_APPROVED ||
+        txnCommonData->status == L3_TXN_ONLINE) {
+      isC50Present = 1;
+      // entry Mode
+      switch (stSystemSafe.cTransAttr) {
+        case ATTR_MANUAL:
+          txnCommonData->shEntryMode = CMD_PEM_KBD;
+          break;
+        case ATTR_MAGSTRIPE:
+          txnCommonData->shEntryMode = CMD_PEM_MSR;
+          break;
+        case ATTR_CONTACT:
+          txnCommonData->shEntryMode = CMD_PEM_EMV;
+          break;
+        case ATTR_CONTACTLESS:
+          txnCommonData->shEntryMode = CMD_PEM_CTLS;
+          break;
+        case ATTR_FALLBACK:
+          txnCommonData->shEntryMode = CMD_PEM_MSR_FBK;
+          break;
+        default:
+          txnCommonData->shEntryMode = CMD_PEM_UNDEF;
+          break;
+      }
+
+      if (stSystemSafe.cTransAttr == ATTR_MANUAL) {
+        char szPan[19 + 1] = {0};
+
+        GetCardEventData(szPan);
+        TRACE("szPan:%s", szPan);
+        strcpy(txnCommonData->chPan, szPan);
+        txnCommonData->inPan = strlen(txnCommonData->chPan);
+      } else {
+        /**
+         * Get Data Response
+         */
+        // Pan
+        TRACE("szPan:%s", stSystemSafe.szPan);
+        strcpy(txnCommonData->chPan, stSystemSafe.szPan);
+        txnCommonData->inPan = strlen(txnCommonData->chPan);
+      }
+      memcpy(panC50, txnCommonData->chPan, strlen(txnCommonData->chPan));
+      memcpy(amountC50, txnCommonData->chAmount,
+             strlen(txnCommonData->chAmount));
+      entryModeC50 = stSystemSafe.cTransAttr;
+
+      if (txnCommonData->shEntryMode == CMD_PEM_EMV) {
+        if (ProGetCardStatus() != APP_SUCC) {
+          PubClear2To4();
+          PubDisplayStr(DISPLAY_MODE_CENTER, 3, 1, "TARJETA RETIRADA");
+          PubUpdateWindow();
+          PubBeep(1);
+          PubSysDelay(5);
+          txnCommonData->status = RET_CMD_CARD_REMOVE;
+          isC50Present = 0;
+          return APP_FAIL;
+        }
+      }
+
+    } else {
+      NAPI_L3TerminateTransaction();
+      isC50Present = 0;
+      InitInputAMT();
+    }
+  }
+
+  if (txnCommonData->inCommandtype == CMD_C51) {
+    int ipekFlag = 0;
+    ipekFlag = ipek_exists();
+    TRACE("BANDERA IPEK: %d", ipekFlag);
+    if (isC50Present == 1) {
+      // Comparamos el amount de comando C50 con el entrante del C51
+      if (strcmp(amountC50, txnCommonData->chAmount) != 0) {
+        // Doble TAP en caso de C50 con PEM Contactless
+        if (stSystemSafe.cTransAttr == ATTR_CONTACTLESS ||
+            stSystemSafe.cTransAttr == ATTR_CONTACT) {
+          char auxTransAttr = stSystemSafe.cTransAttr;
+          NAPI_L3TerminateTransaction();
+          isC50Present = 0;
+          InitInputAMT();
+
+          memset(&stSystemSafe, 0, sizeof(STSYSTEM));
+
+          /**
+           * TimeOut
+           */
+          stSystemSafe.iTimeout = txnCommonData->inTimeOut;
+
+          /**
+           * input Amount
+           */
+          memcpy(stSystemSafe.szAmount, txnCommonData->chAmount, 12);
+          /**
+           * input Amount Other
+           */
+          memcpy(stSystemSafe.szCashbackAmount, txnCommonData->chOtherAmount,
+                 12);
+
+          /**
+           * Suma (input Amount)+ (input Amount Other)
+           */
+
+          /*nRet = TxnGetAmout("CONFIRMACION MONTO", &stSystemSafe, "");
+          if (nRet == APP_FAIL) {
+            txnCommonData->status = kOtherFailure;
+            return APP_FAIL;
+          }*/
+
+          /**
+           * Txn Type
+           */
+          stSystemSafe.cTransType = cTransType;
+          TRACE("stSystemSafe.cTransType: %c", stSystemSafe.cTransType);
+
+          switch (stSystemSafe.cTransType) {
+            case TRANS_SALE:
+              strcpy(stSystemSafe.szProcCode, "00");
+              break;
+            case TRANS_REFUND:
+              strcpy(stSystemSafe.szProcCode, "01");
+              break;
+            default:
+              strcpy(stSystemSafe.szProcCode, "00");
+              break;
+          }
+
+          /**
+           * Set Date & Time
+           */
+          PubSetPosDateTime(txnCommonData->chDate, "YYMMDD",
+                            txnCommonData->chTime);
+
+          /**
+           * Curr Code
+           */
+          // memcpy(stSystemSafe.szCurrencyCode, txnCommonData->chCurrCode, 2);
+          memcpy(stSystemSafe.szCurrencyCode, "\x04\x84", 2);
+          /**
+           * mrch decn
+           */
+          // Force Online Authorization
+          if (txnCommonData->inMerchantDesicion == 0x01) {
+            stSystemSafe.merchantDesicion = 0x01;
+          } else {
+            stSystemSafe.merchantDesicion = 0x00;
+          }
+
+          /**
+           * clear online pin
+           */
+          EmvClrOnlinePin();
+
+          if (CheckLowBattery() == RET_CMD_OK) {
+            /**
+             * Perform transactions on the MSR, contact and contactless card
+             * interfaces.
+             */
+            if (auxTransAttr == ATTR_CONTACT) {
+              nRet = PerformTransaction(szTitle, &stSystemSafe, &nInputMode,
+                                        TXN_FULLEMV_AFTERC50);
+
+            } else {
+              nRet = PerformTransaction(szTitle, &stSystemSafe, &nInputMode,
+                                        TXN_FULLEMV);
+            }
+
+            txnCommonData->status = stSystemSafe.cEMV_Status;
+          } else {
+            txnCommonData->status = kOtherFailure;
+          }
+
+          TRACE("PerformTransaction nRet[%d] status[%d]", nRet,
+                txnCommonData->status);
+
+          //if (stSystemSafe.cTransAttr != NULL && stSystemSafe.szPan != NULL) {
+          if (stSystemSafe.cTransAttr != 0 && stSystemSafe.szPan != NULL) {
+            int j;
+            int isPanEqual = 1;
+
+            TRACE("check posEntryMode and PAN");
+            TRACE("C50: [%s] ,[%s], [%02x]", panC50, amountC50, entryModeC50);
+            TRACE("C51: [%s] ,[%s], [%02x]", stSystemSafe.szPan,
+                  stSystemSafe.szAmount, stSystemSafe.cTransAttr);
+            if (entryModeC50 != stSystemSafe.cTransAttr) {
+              DispOutICC("TARJETA NO COINCIDE", "INICIE NUEVAMENTE", "");
+              txnCommonData->status = kCardMismatch;
+            }
+
+            for (j = 0; j < 16; j++) {
+              if (panC50[j] != stSystemSafe.szPan[j]) {
+                isPanEqual = 0;
+                break;
+              }
+            }
+            if (isPanEqual == 0) {
+              TRACE("PAN not mach with previous C50");
+              DispOutICC("TARJETA NO COINCIDE", "INICIE NUEVAMENTE", "");
+              txnCommonData->status = kCardMismatch;
+            }
+          }
+        } else {
+          txnCommonData->status = L3_TXN_ONLINE;
+          stSystemSafe.iTimeout = txnCommonData->inTimeOut;
+        }
+
+      } else {
+        // EMV FULL EN TRANSACCIONES CON CHIP
+        if (stSystemSafe.cTransAttr == ATTR_CONTACT) {
+          NAPI_L3TerminateTransaction();
+          isC50Present = 0;
+          InitInputAMT();
+
+          memset(&stSystemSafe, 0, sizeof(STSYSTEM));
+
+          /**
+           * TimeOut
+           */
+          stSystemSafe.iTimeout = txnCommonData->inTimeOut;
+
+          /**
+           * input Amount
+           */
+          memcpy(stSystemSafe.szAmount, txnCommonData->chAmount, 12);
+          /**
+           * input Amount Other
+           */
+          memcpy(stSystemSafe.szCashbackAmount, txnCommonData->chOtherAmount,
+                 12);
+
+          /**
+           * Suma (input Amount)+ (input Amount Other)
+           */
+
+          /**
+           * Txn Type
+           */
+          stSystemSafe.cTransType = cTransType;
+          TRACE("stSystemSafe.cTransType: %c", stSystemSafe.cTransType);
+
+          switch (stSystemSafe.cTransType) {
+            case TRANS_SALE:
+              strcpy(stSystemSafe.szProcCode, "00");
+              break;
+            case TRANS_REFUND:
+              strcpy(stSystemSafe.szProcCode, "01");
+              break;
+            default:
+              strcpy(stSystemSafe.szProcCode, "00");
+              break;
+          }
+
+          /**
+           * Set Date & Time
+           */
+          PubSetPosDateTime(txnCommonData->chDate, "YYMMDD",
+                            txnCommonData->chTime);
+
+          /**
+           * Curr Code
+           */
+          // memcpy(stSystemSafe.szCurrencyCode, txnCommonData->chCurrCode, 2);
+          memcpy(stSystemSafe.szCurrencyCode, "\x04\x84", 2);
+          /**
+           * mrch decn
+           */
+          // Force Online Authorization
+          if (txnCommonData->inMerchantDesicion == 0x01) {
+            stSystemSafe.merchantDesicion = 0x01;
+          } else {
+            stSystemSafe.merchantDesicion = 0x00;
+          }
+
+          /**
+           * clear online pin
+           */
+          EmvClrOnlinePin();
+
+          if (CheckLowBattery() == RET_CMD_OK) {
+            /**
+             * Perform transactions on the MSR, contact and contactless card
+             * interfaces.
+             */
+            nRet = PerformTransaction(szTitle, &stSystemSafe, &nInputMode,
+                                      TXN_FULLEMV_AFTERC50);
+            txnCommonData->status = stSystemSafe.cEMV_Status;
+          } else {
+            txnCommonData->status = kOtherFailure;
+          }
+
+          TRACE("PerformTransaction nRet[%d] status[%d]", nRet,
+                txnCommonData->status);
+
+          //if (stSystemSafe.cTransAttr != NULL && stSystemSafe.szPan != NULL) {
+          if (stSystemSafe.cTransAttr != 0 && stSystemSafe.szPan != NULL) {
+            int j;
+            int isPanEqual = 1;
+
+            TRACE("check posEntryMode and PAN");
+            TRACE("C50: [%s] ,[%s], [%02x]", panC50, amountC50, entryModeC50);
+            TRACE("C51: [%s] ,[%s], [%02x]", stSystemSafe.szPan,
+                  stSystemSafe.szAmount, stSystemSafe.cTransAttr);
+            if (entryModeC50 != stSystemSafe.cTransAttr) {
+              DispOutICC("TARJETA NO COINCIDE", "INICIE NUEVAMENTE", "");
+              txnCommonData->status = kCardMismatch;
+            }
+
+            for (j = 0; j < 16; j++) {
+              if (panC50[j] != stSystemSafe.szPan[j]) {
+                isPanEqual = 0;
+                break;
+              }
+            }
+            if (isPanEqual == 0) {
+              TRACE("PAN not mach with previous C50");
+              DispOutICC("TARJETA NO COINCIDE", "INICIE NUEVAMENTE", "");
+              txnCommonData->status = kCardMismatch;
+            }
+          }
+        } else {  // TRANS DIGITADAS ,BANDA, FALLBACK, CONTACTLESS
+          txnCommonData->status = L3_TXN_ONLINE;
+          stSystemSafe.iTimeout = txnCommonData->inTimeOut;
+        }
+      }
+
+    } else {
+      memset(&stSystemSafe, 0, sizeof(STSYSTEM));
+      /**
+       * TimeOut
+       */
+      stSystemSafe.iTimeout = txnCommonData->inTimeOut;
+
+      /**
+       * Txn Type
+       */
+      stSystemSafe.cTransType = cTransType;
+      TRACE("stSystemSafe.cTransType: %c", stSystemSafe.cTransType);
+      switch (stSystemSafe.cTransType) {
+        case TRANS_SALE:
+          strcpy(stSystemSafe.szProcCode, "00");
+          break;
+        case TRANS_REFUND:
+          strcpy(stSystemSafe.szProcCode, "01");
+          break;
+        default:
+          strcpy(stSystemSafe.szProcCode, "00");
+          break;
+      }
+
+      /**
+       * Set Date & Time
+       */
+      PubSetPosDateTime(txnCommonData->chDate, "YYMMDD", txnCommonData->chTime);
+
+      /**
+       * input Amount
+       */
+      memcpy(stSystemSafe.szAmount, txnCommonData->chAmount, 12);
+
+      memcpy(stSystemSafe.szCashbackAmount, txnCommonData->chOtherAmount, 12);
+
+      /**
+       * Curr Code
+       */
+      // memcpy(stSystemSafe.szCurrencyCode, txnCommonData->chCurrCode, 2);
+      memcpy(stSystemSafe.szCurrencyCode, "\x04\x84", 2);
+
+      /**
+       * mrch decn
+       */
+      // Force Online Authorization
+      if (txnCommonData->inMerchantDesicion == 0x01) {
+        stSystemSafe.merchantDesicion = 0x01;
+      } else {
+        stSystemSafe.merchantDesicion = 0x00;
+      }
+
+      /**
+       * clear online pin
+       */
+      EmvClrOnlinePin();
+
+      if (CheckLowBattery() == RET_CMD_OK) {
+        /**
+         * Perform transactions on the MSR, contact and contactless card
+         * interfaces.
+         */
+        nRet = PerformTransaction(szTitle, &stSystemSafe, &nInputMode,
+                                  TXN_FULLEMV);
+
+        txnCommonData->status = stSystemSafe.cEMV_Status;
+      } else {
+        txnCommonData->status = kOtherFailure;
+      }
+
+      TRACE("PerformTransaction nRet[%d] status[%d]", nRet,
+            txnCommonData->status);
+    }
+
+    if (txnCommonData->status == L3_TXN_DECLINE ||
+        txnCommonData->status == L3_TXN_APPROVED ||
+        txnCommonData->status == L3_TXN_ONLINE) {
+      /**
+       * Get Data Response
+       */
+
+      // Pin Block
+      txnCommonData->cPinBlock = stSystemSafe.pinBlock;
+
+      if (txnCommonData->cPinBlock != PIN_OK) {
+        PubClearAll();
+        PubDisplayStr(DISPLAY_MODE_CENTER, 2, 1, "FIRMA ELECTRONICA");
+        PubDisplayStr(DISPLAY_MODE_CENTER, 3, 1, "BLOQUEADA");
+        PubUpdateWindow();
+        PubBeep(1);
+        PubSysDelay(10);
+      }
+
+      // Pan
+      log_trace("szPan:%s", stSystemSafe.szPan);
+      strcpy(txnCommonData->chPan, stSystemSafe.szPan);
+      txnCommonData->inPan = strlen(txnCommonData->chPan);
+
+      // Ultimos 4 digitos Pan
+      memcpy(txnCommonData->chLast4Pan,
+             stSystemSafe.szPan + strlen(stSystemSafe.szPan) - 4, 4);
+
+      // tk2
+      if (strlen(stSystemSafe.szTrack2) > 0) {
+        log_trace("szTrack2:%s", stSystemSafe.szTrack2);
+        strcpy(txnCommonData->chTk2, stSystemSafe.szTrack2);
+        txnCommonData->inTk2 = strlen(txnCommonData->chTk2);
+      } else {
+        memset(txnCommonData->chTk2, 0x00, sizeof(txnCommonData->chTk2));
+        txnCommonData->inTk2 = 0;
+      }
+
+      // tk1
+      if (strlen(stSystemSafe.szTrack1) > 0) {
+        log_trace("szTrack1:%s", stSystemSafe.szTrack1);
+        strcpy(txnCommonData->chTk1, stSystemSafe.szTrack1);
+        txnCommonData->inTk1 = strlen(txnCommonData->chTk1);
+      } else {
+        memset(txnCommonData->chTk1, 0x00, sizeof(txnCommonData->chTk1));
+        txnCommonData->inTk1 = 0;
+      }
+
+      // Crd Hold Name
+      if (strlen(stSystemSafe.szHolderName) > 0) {
+        log_trace("szHolderName:%s", stSystemSafe.szHolderName);
+        strcpy(txnCommonData->chHld, stSystemSafe.szHolderName);
+        txnCommonData->inHld = strlen(txnCommonData->chHld);
+      } else {
+        txnCommonData->inHld = 0;
+        memset(txnCommonData->chHld, 0x00, sizeof(txnCommonData->chHld));
+      }
+
+      // entry Mode
+      switch (stSystemSafe.cTransAttr) {
+        case ATTR_MANUAL:
+          txnCommonData->shEntryMode = CMD_PEM_KBD;
+          break;
+        case ATTR_MAGSTRIPE:
+          txnCommonData->shEntryMode = CMD_PEM_MSR;
+          break;
+        case ATTR_CONTACT:
+          txnCommonData->shEntryMode = CMD_PEM_EMV;
+          NAPI_L3SetData(_EMV_TAG_9F39_TM_POSENTMODE, "\x05", 1);
+          break;
+        case ATTR_CONTACTLESS:
+          txnCommonData->shEntryMode = CMD_PEM_CTLS;
+          NAPI_L3SetData(_EMV_TAG_9F39_TM_POSENTMODE, "\x07", 1);
+          break;
+        case ATTR_FALLBACK:
+          txnCommonData->shEntryMode = CMD_PEM_MSR_FBK;
+          break;
+        default:
+          txnCommonData->shEntryMode = CMD_PEM_UNDEF;
+          break;
+      }
+
+      // Cvv2 for MGS & FALLBACK
+      if (stSystemSafe.cTransAttr == ATTR_MANUAL ||
+          stSystemSafe.cTransAttr == ATTR_MAGSTRIPE ||
+          stSystemSafe.cTransAttr == ATTR_FALLBACK) {
+        char chExpDate[4 + 1] = {0};
+        char chzCvv[4 + 1] = {0};
+
+        memset(chExpDate, 0x00, sizeof(chExpDate));
+        memset(chzCvv, 0x00, sizeof(chzCvv));
+
+        nRet = GetManualData(chExpDate, chzCvv, stSystemSafe.iTimeout,
+                             stSystemSafe.szPan, txnCommonData->shEntryMode,
+                             txnCommonData);
+        log_trace("MANUAL DATA----->> CVV: %s , ExpDate: %s ", chzCvv,
+                  chExpDate);
+        log_trace("NRET----->> %d", nRet);
+        if (nRet != APP_SUCC) {
+          switch (nRet) {
+            case kCardExpired:
+              PubBeep(1);
+              DispOutICC(NULL, tr("TARJETA VENCIDA"), "");
+              txnCommonData->status = kCardExpired;
+              break;
+            case L3_ERR_CANCEL:
+              PubBeep(1);
+              DispOutICC(NULL, tr("OPERACION CANCELADA"), "");
+              txnCommonData->status = kOtherFailure;
+              break;
+            case L3_ERR_TIMEOUT:
+              PubBeep(1);
+              DispOutICC(NULL, tr("TIEMPO EXCEDIDO"), "");
+              txnCommonData->status = kTimeOut;
+              break;
+
+            default:
+              txnCommonData->status = kOtherFailure;
+              break;
+          }
+
+          NAPI_L3TerminateTransaction();
+          isC50Present = 0;
+          return APP_FAIL;
+        } else {
+          strcpy(stSystemSafe.szCVV2, chzCvv);
+          strcpy(stSystemSafe.szExpDate, chExpDate);
+        }
+      }
+
+      // Exp Date
+      TRACE_HEX(stSystemSafe.szExpDate, sizeof stSystemSafe.szExpDate,
+                "szExpDate: ");
+      memcpy(txnCommonData->chExp, stSystemSafe.szExpDate,
+             sizeof(stSystemSafe.szExpDate));
+      txnCommonData->inExp = strlen(txnCommonData->chExp);
+
+      // Cvv
+      log_trace("Cvv2 Len: %d", strlen(stSystemSafe.szCVV2));
+      if (strlen(stSystemSafe.szCVV2) > 0) {
+        log_trace("Cvv2:%s", stSystemSafe.szCVV2);
+        strcpy(txnCommonData->chCv2, stSystemSafe.szCVV2);
+        txnCommonData->inCv2 = strlen(txnCommonData->chCv2);
+      } else {
+        memset(txnCommonData->chCv2, 0x00, sizeof(txnCommonData->chCv2));
+        txnCommonData->inCv2 = 0;
+      }
+
+      nRet = CompareBin(stSystemSafe.szPan);
+      log_debug("Parse_BinesTable: %d", nRet);
+      // VALIDAMOS SI EL BIN SE ENCUENTRA EN LA TABLA DE BINES
+      if (ipekFlag == 1 && (nRet == 0 || nRet == -1)) {
+        txnCommonData->inTk2 = 0;
+        txnCommonData->inTk1 = 0;
+        txnCommonData->inCv2 = 0;
+        txnCommonData->chReqEncryption = ENCRYPT_DATA;
+      } else if (nRet == 1) {
+        txnCommonData->chReqEncryption = NO_ENCRYPT_DATA;
+      }
+
+      if (txnCommonData->shEntryMode == CMD_PEM_EMV ||
+          txnCommonData->shEntryMode == CMD_PEM_CTLS) {
+        char dataSignature[2] = {0};
+        char auxchE1[512] = {0};
+        int auxinE1 = 0;
+        int len = 0;
+        char szTmp0[50] = {0};
+        len = 16;
+        char serialN[8 + 1] = {0};
+        char hexAscserialN[8 + 1] = {0};
+        int inTransType = (cTransType - 48);
+        char auxCtq[2 + 1] = {0};
+
+        // Serial Number in Tag 9F1E
+
+        nRet = NAPI_SysGetInfo(SN, szTmp0, &len);
+        memcpy(serialN, szTmp0 + strlen(szTmp0) % 8, 8);
+        ConvertStringToAscii(serialN, hexAscserialN);
+        len = inAscToHex(hexAscserialN, szTmp0, strlen(hexAscserialN));
+        TRACE_HEX(szTmp0, len, "SN hex: ");
+
+        NAPI_L3SetData(_EMV_TAG_9F1E_TM_IFDSN, szTmp0, 8);
+        NAPI_L3SetData(_EMV_TAG_9F53_MCC, "\x52", 1);
+
+        if (txnCommonData->shEntryMode == CMD_PEM_CTLS) {
+          // TRANSACTION SEQUENCE COUNTER PARA CONTACTLESS
+          unsigned int auxTrCntr = 0;
+          int retTag9F06;
+          unsigned char tag9F06[16 + 1] = {0};
+          unsigned char tag9F06inASCII[16 + 1] = {0};
+
+          PubC4ToInt(&auxTrCntr, TRSEQCNTR);
+          auxTrCntr++;
+          PubIntToC4(TRSEQCNTR, auxTrCntr);
+          NAPI_L3SetData(_EMV_TAG_9F41_TM_TRSEQCNTR, TRSEQCNTR, 4);
+
+          NAPI_L3SetData(_EMV_TAG_8A_TM_ARC, NULL, 0);
+          NAPI_L3SetData(_EMV_TAG_99_TM_PINDATA, NULL, 0);
+          NAPI_L3SetData(_EMV_TAG_5F30_IC_SERVICECODE, NULL, 0);
+          // NAPI_L3SetData(_EMV_TAG_9F34_TM_CVMRESULT, "\x1F\x00\x00", 3);
+
+          retTag9F06 = NAPI_L3GetData(_EMV_TAG_9F06_TM_AID, tag9F06, 17);
+          if (retTag9F06 > 0) {
+            TRACE("Si existe tag 9F06(AID)");
+            TRACE("len 0x9F36(AID) [%d]", retTag9F06);
+            TRACE_HEX(tag9F06, retTag9F06, "tag 9F06(AID) ");
+            PubHexToAsc(tag9F06, (retTag9F06 * 2), 0, tag9F06inASCII);
+            TRACE("tag9F06inASCII [%s]", tag9F06inASCII);
+
+          } else {
+            TRACE("No existe tag 9F06(AID)");
+          }
+
+          if (strcmp(tag9F06inASCII, "A0000000031010") == 0 ||
+              strcmp(tag9F06inASCII, "A0000000032010") == 0 ||
+              strcmp(tag9F06inASCII, "A0000000033010") == 0) {
+            log_trace("TARJETA VISA");
+
+            nRet = NAPI_L3GetData(0x9F6C, auxCtq, 2);
+
+            if (nRet > 0) {
+              char byte1 = auxCtq[0];
+              char byte2 = auxCtq[1];
+              char singnFlag[3 + 1] = {0};
+              int inB1Tag9F6E = 0;
+              int inB2Tag9F6C = 0;
+              unsigned long long lonAmount;
+              unsigned char tag9F6E[20 + 1] = {0};
+
+              log_trace("SI exsite 0x9F6C , nRet: %d", nRet);
+              log_trace("0x9F6C: %02x%02x", auxCtq[0], auxCtq[1]);
+              TRACE_HEX(auxCtq, nRet, "0x9F6C ");
+
+              lonAmount = AtoLL(txnCommonData->chAmount);
+
+              if (lonAmount > 40000) {
+                NAPI_L3SetData(0x9F66, "\x32\xC0\x40\x00", 4);
+              } else {
+                NAPI_L3SetData(0x9F66, "\x32\xA0\x40\x00", 4);
+              }
+
+              byte1 &= 0xC0;
+              log_trace("Byte 1 : %02x", byte1);
+
+              inB2Tag9F6C = byte2;
+              inB2Tag9F6C &= 0x80;
+
+              log_trace(
+                  " [TAG 0x9F6C] Byte1 [bit 7 y8]: %d , [TAG ]Byte 2 [bit8]: "
+                  "%d",
+                  byte1, inB2Tag9F6C);
+
+              NAPI_L3GetData(0x9F6E, tag9F6E, 20);
+
+              inB1Tag9F6E = tag9F6E[0];
+              inB1Tag9F6E &= 0x03;
+
+              log_trace("[TAG 9f6E] , nRet: %d", nRet);
+              log_trace("0x9F6E First bit: %02x", tag9F6E[0]);
+
+              nRet = NAPI_L3GetData(0x9F66, tag9F6E, 20);
+              if (nRet > 0) {
+                log_trace("Si existe Tag 0x9F66, nRet: %d", nRet);
+                log_trace("0x9F66 value: %02x%02x%02x%02x", tag9F6E[0],
+                          tag9F6E[1], tag9F6E[2], tag9F6E[3]);
+              } else {
+                log_trace("No existe Tag 0x9F66");
+              }
+
+              // VALIDACION DE TAG 9F12 PARA WALLET
+              if (inB1Tag9F6E == 0x03) {
+                unsigned char tag9F12[20] = {0};
+                nRet = NAPI_L3GetData(0x9F12, tag9F12, 20);
+                if (nRet > 0) {
+                  log_trace("Si existe Tag 0x9F12 para Wallet, nRet: %d", nRet);
+                } else {
+                  log_trace("No existe Tag 0x9F12 para Wallet");
+                  NAPI_L3SetData(_EMV_TAG_9F12_IC_APNAME, NULL, 0);
+                }
+              }
+
+              if (byte1 == 0x00) {
+                if (inB2Tag9F6C == 0) {
+                  if (inB1Tag9F6E == 0x03) {
+                    if (lonAmount <= 40000) {
+                      NAPI_L3SetData(_EMV_TAG_9F34_TM_CVMRESULT, "\x1F\x00\x00",
+                                     3);
+                      stSystemSafe.cPinAndSigFlag = 0x02;
+                    } else {
+                      NAPI_L3SetData(_EMV_TAG_9F34_TM_CVMRESULT, "\x41\x00\x00",
+                                     3);
+                      stSystemSafe.cPinAndSigFlag = 0x03;
+                    }
+                  } else {
+                    if (lonAmount <= 40000) {
+                      NAPI_L3SetData(_EMV_TAG_9F34_TM_CVMRESULT, "\x1F\x00\x00",
+                                     3);
+                      stSystemSafe.cPinAndSigFlag = 0x02;
+                    } else {
+                      NAPI_L3SetData(_EMV_TAG_9F34_TM_CVMRESULT, "\x1E\x00\x00",
+                                     3);
+                      stSystemSafe.cPinAndSigFlag = 0x01;
+                    }
+                  }
+                } else {
+                  if (inB1Tag9F6E == 0x03) {
+                    NAPI_L3SetData(_EMV_TAG_9F34_TM_CVMRESULT, "\x41\x00\x00",
+                                   3);
+                    stSystemSafe.cPinAndSigFlag = 0x03;
+                  }
+                }
+              } else if (byte1 == 0x40) {
+                if (inB2Tag9F6C == 0) {
+                  if (inB1Tag9F6E == 0x03) {
+                    if (lonAmount <= 40000) {
+                      NAPI_L3SetData(_EMV_TAG_9F34_TM_CVMRESULT, "\x1F\x00\x00",
+                                     3);
+                      stSystemSafe.cPinAndSigFlag = 0x02;
+                    } else {
+                      NAPI_L3SetData(_EMV_TAG_9F34_TM_CVMRESULT, "\x41\x00\x00",
+                                     3);
+                      stSystemSafe.cPinAndSigFlag = 0x03;
+                    }
+                  } else {
+                    if (lonAmount > 40000) {
+                      NAPI_L3SetData(_EMV_TAG_9F34_TM_CVMRESULT, "\x1E\x00\x00",
+                                     3);
+                      stSystemSafe.cPinAndSigFlag = 0x01;
+                    } else {
+                      NAPI_L3SetData(_EMV_TAG_9F34_TM_CVMRESULT, "\x1F\x00\x00",
+                                     3);
+                      stSystemSafe.cPinAndSigFlag = 0x02;
+                    }
+                  }
+                } else {
+                }
+              }
+            }
+          } else {
+            char chCvmMethod[2] = {0};
+            if (NAPI_L3GetData(L3_DATA_CVM_OUTCOME, chCvmMethod, 1) > 0) {
+              log_trace("L3_DATA_CVM_OUTCOM:  %02x", chCvmMethod[0]);
+            }
+
+            if (chCvmMethod[0] == 0x00) {
+              log_trace("NINGUN METODO CVM");
+              stSystemSafe.cPinAndSigFlag = 0x02;
+            } else if (chCvmMethod[0] == 0x10) {
+              log_trace("CVM SIGNATURE");
+              stSystemSafe.cPinAndSigFlag = 0x01;
+            } else {
+              log_trace("OTRO METODO DE CVM");
+              stSystemSafe.cPinAndSigFlag = 0x03;
+            }
+          }
+        }
+
+        /**
+         * Get TLV Emv
+         */
+        EmvPackTLVData(txnCommonData->uinE1P1, txnCommonData->inuE1P1,
+                       txnCommonData->chE1, &txnCommonData->inE1);
+
+        if (NAPI_L3GetData(L3_DATA_SIGNATURE, dataSignature, 1) > 0) {
+          TRACE_HEX(dataSignature, 1, "L3_DATA_SIGNATURE");
+          char complete_dataS[3 + 1] = {0};
+          complete_dataS[0] = 0xC2;
+          complete_dataS[1] = 0x01;
+          if (inTransType == TRANS_QPS) {
+            complete_dataS[2] = 0x01;
+          } else {
+            complete_dataS[2] = stSystemSafe.cPinAndSigFlag;
+          }
+
+          memcpy(txnCommonData->chE1 + txnCommonData->inE1, complete_dataS, 3);
+          txnCommonData->inE1 += 3;
+        } else {
+          char complete_dataS[2 + 1] = {0};
+          complete_dataS[0] = 0xC2;
+          complete_dataS[1] = 0x00;
+          memcpy(txnCommonData->chE1 + txnCommonData->inE1, complete_dataS, 2);
+          txnCommonData->inE1 += 2;
+        }
+
+        EmvPackTLVData(txnCommonData->uinE1P2, txnCommonData->inuE1P2, auxchE1,
+                       &auxinE1);
+
+        memcpy(txnCommonData->chE1 + txnCommonData->inE1, auxchE1, auxinE1);
+        txnCommonData->inE1 += auxinE1;
+
+        EmvPackTLVData(txnCommonData->uinE2, txnCommonData->inuE2,
+                       txnCommonData->chE2, &txnCommonData->inE2);
+
+        if (ProGetCardStatus() != APP_SUCC &&
+            txnCommonData->shEntryMode == CMD_PEM_EMV) {
+          PubClear2To4();
+          PubDisplayStr(DISPLAY_MODE_CENTER, 3, 1, "TARJETA RETIRADA");
+          PubUpdateWindow();
+          PubBeep(1);
+          PubSysDelay(5);
+          txnCommonData->status = RET_CMD_CARD_REMOVE;
+          NAPI_L3TerminateTransaction();
+          isC50Present = 0;
+          return APP_FAIL;
+        }
+      }
+    } else {
+      NAPI_L3TerminateTransaction();
+      isC50Present = 0;
+      InitInputAMT();
+    }
+  }
+
+  if (txnCommonData->inCommandtype == CMD_C54) {
+    char chRespCode[13 + 1] = {0};
+
+    if (strlen(txnCommonData->chRspCode) > 0) {
+      sprintf(chRespCode, "(%s)", txnCommonData->chRspCode);
+    } else {
+      strcat(chRespCode, "SIN RESPUESTA");
+    }
+
+    // Set stSystem Data
+    if (txnCommonData->inHostDec == HOST_AUTHORISED) {
+      memcpy(stSystem.szAuthCode, txnCommonData->chAuthCode,
+             sizeof stSystem.szAuthCode);
+      memcpy(stSystem.szResponse, txnCommonData->chRspCode,
+             sizeof stSystem.szResponse);
+      memcpy(stSystem.szAuthData, txnCommonData->chIssAuthData,
+             txnCommonData->inIssAuthData);
+      stSystem.inAuthData = txnCommonData->inIssAuthData;
+
+      if (txnCommonData->shEntryMode == CMD_PEM_EMV) {
+        if (ProGetCardStatus() != APP_SUCC) {
+          PubClear2To4();
+          PubDisplayStr(DISPLAY_MODE_CENTER, 3, 1, "TARJETA RETIRADA");
+          PubUpdateWindow();
+          PubBeep(1);
+          PubSysDelay(5);
+          txnCommonData->status = RET_CMD_CARD_REMOVE;
+          NAPI_L3TerminateTransaction();
+          isC50Present = 0;
+          return APP_FAIL;
+        }
+
+        if (txnCommonData->inTlvCompleteTxn > 0) {
+          stSystem.psAddField = txnCommonData->chTlvCompleteTxn;
+          stSystem.nAddFieldLen = txnCommonData->inTlvCompleteTxn;
+          pdump(stSystem.psAddField, stSystem.nAddFieldLen,
+                "KernelScripts C54:");
+        }
+
+        /**
+         * Complete the transaction.
+         */
+        nRet = CompleteTransaction(szTitle, nOnlineResult, &stSystem, NULL,
+                                   nInputPinNum);
+
+        txnCommonData->status = stSystem.cEMV_Status;
+
+        TRACE("PerformTransaction nRet[%d] status[%d]", nRet,
+              txnCommonData->status);
+
+        /**
+         * Get TLV Emv
+         */
+        EmvPackTLVData(txnCommonData->uinE2, txnCommonData->inuE2,
+                       txnCommonData->chE2, &txnCommonData->inE2);
+      } else {
+        txnCommonData->status = L3_TXN_APPROVED;
+      }
+      if (txnCommonData->status == L3_TXN_APPROVED) {
+        PubBeep(1);
+        DispOutICC(tr("APROBADA"), stSystem.szAuthCode, "");
+      }
+
+    } else if (txnCommonData->inHostDec == HOST_DECLINED) {
+      txnCommonData->status = L3_TXN_APPROVED;
+      PubBeep(1);
+      DispOutICC("RECHAZADA POR EL HOST", chRespCode, "");
+      if (strcmp(txnCommonData->chRspCode, "65") == 0 &&
+          txnCommonData->shEntryMode == CMD_PEM_CTLS) {
+        PubBeep(1);
+        DispOutICC("POR FAVOR USE LECTOR", " DE CONTACTO ", "");
+      }
+
+    } else if (txnCommonData->inHostDec == FAILED_TO_CONNECT) {
+      txnCommonData->status = L3_TXN_APPROVED;
+      PubBeep(1);
+      DispOutICC("NO HUBO RESPUESTA DEL HOST", chRespCode, "");
+    } else if (txnCommonData->inHostDec == REFERRAL_AUTHORISED) {
+      PubBeep(1);
+      DispOutICC("", "", "");
+      txnCommonData->status = L3_TXN_APPROVED;
+    } else {
+      txnCommonData->status = L3_TXN_APPROVED;
+    }
+
+    NAPI_L3TerminateTransaction();
+    isC50Present = 0;
+  }
+
+  return nRet;
 }
 
